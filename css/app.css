@@ -158,7 +158,7 @@ body:has(#panel:not([hidden])) #zoom { right: min(448px, calc(100vw - 54px)); }
   #searchWrap { order: 3; flex: 1 0 100%; }
   #q { min-height: 44px; }
   #filterBtn { display: inline-flex; }
-  #filters { display: none; max-height: min(30dvh, 168px); overflow: auto; overscroll-behavior: contain; touch-action: pan-y; }
+  #filters { display: none; max-height: min(38dvh, 260px); overflow: auto; overscroll-behavior: contain; touch-action: pan-y; }
   body.show-filters #filters { display: flex; }
   #hint { display: block; position: fixed; z-index: 7; left: 12px; bottom: calc(var(--foot, 72px) + 8px + var(--sa-b)); margin: 0; padding: 6px 10px; border-radius: 999px; background: rgba(7, 11, 20, .9); border: 1px solid var(--line); color: var(--muted); font-size: 13px; pointer-events: none; }
   body.used #hint, body:has(#panel:not([hidden])) #hint, body.show-filters #hint { display: none; }

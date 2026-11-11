@@ -1,6 +1,6 @@
 diff -ruN a/space/css/app.css b/space/css/app.css
 --- a/space/css/app.css	2026-11-11 16:02:35.921286940 +0000
-+++ b/space/css/app.css	2026-11-11 18:03:40.800857495 +0000
++++ b/space/css/app.css	2026-11-11 18:14:43.867925902 +0000
 @@ -19,7 +19,7 @@
  }
  * { box-sizing: border-box; }
@@ -120,7 +120,7 @@ diff -ruN a/space/css/app.css b/space/css/app.css
 +  #q { min-height: 44px; }
    #filterBtn { display: inline-flex; }
 -  #filters { display: none; }
-+  #filters { display: none; max-height: min(30dvh, 168px); overflow: auto; overscroll-behavior: contain; touch-action: pan-y; }
++  #filters { display: none; max-height: min(38dvh, 260px); overflow: auto; overscroll-behavior: contain; touch-action: pan-y; }
    body.show-filters #filters { display: flex; }
 -  #panel { inset: auto 0 0 0; top: auto; width: auto; height: 72vh; height: 72dvh; border-radius: 16px 16px 0 0; }
 -  #panel.open[data-snap="peek"] { height: 30vh; height: 30dvh; }
@@ -1180,7 +1180,7 @@ diff -ruN a/space/qa/accuracy-findings.md b/space/qa/accuracy-findings.md
 +Source URLs were copied from the file. They were not opened one by one. No connection was reclassified.
 diff -ruN a/space/qa/browse.mjs b/space/qa/browse.mjs
 --- a/space/qa/browse.mjs	2026-11-11 16:02:35.921286940 +0000
-+++ b/space/qa/browse.mjs	2026-11-11 16:46:25.241841851 +0000
++++ b/space/qa/browse.mjs	2026-11-11 18:17:20.646820288 +0000
 @@ -1,15 +1,21 @@
  /**
   * Browser QA for the Space preview. Not part of the page.
@@ -1207,7 +1207,7 @@ diff -ruN a/space/qa/browse.mjs b/space/qa/browse.mjs
  const chrome = process.env.CHROME || "/usr/local/bin/google-chrome";
  const out = process.env.SHOTS || "/tmp/space-qa";
  mkdirSync(out, { recursive: true });
-@@ -52,11 +58,157 @@
+@@ -52,14 +58,163 @@
        selected: p.selected,
        tours: p.tours,
        source: p.source,
@@ -1363,9 +1363,17 @@ diff -ruN a/space/qa/browse.mjs b/space/qa/browse.mjs
 +}
 +
  function ocr(file) {
-   try { return execFileSync("tesseract", [file, "stdout", "--psm", "6"], { encoding: "utf8" }); }
-   catch { return ""; }
-@@ -84,14 +236,24 @@
+-  try { return execFileSync("tesseract", [file, "stdout", "--psm", "6"], { encoding: "utf8" }); }
+-  catch { return ""; }
++  try {
++    const scaled = `${file}.x3.png`;
++    execFileSync("ffmpeg", ["-y", "-i", file, "-vf", "scale=iw*3:ih*3:flags=neighbor", scaled], { stdio: "ignore" });
++    return execFileSync("tesseract", [scaled, "stdout", "--psm", "6"], { encoding: "utf8" });
++  } catch { return ""; }
+ }
+ 
+ async function fps(page) {
+@@ -84,14 +239,24 @@
    const page = await context.newPage();
    attach(page, bucket);
    const t0 = Date.now();
@@ -1393,7 +1401,7 @@ diff -ruN a/space/qa/browse.mjs b/space/qa/browse.mjs
    await page.screenshot({ path: `${out}/${path}-home.png` });
    const homeFill = await page.evaluate(() => {
      const space = window.__spacePreview.engine;
-@@ -106,7 +268,7 @@
+@@ -106,7 +271,7 @@
      const ys = pts.map((p) => p[1]);
      return { width: Math.max(...xs) - Math.min(...xs), view: space.w };
    });
@@ -1402,7 +1410,7 @@ diff -ruN a/space/qa/browse.mjs b/space/qa/browse.mjs
    if (name === "phone") {
      const clipped = await page.evaluate(() => {
        const brand = document.querySelector(".brand").getBoundingClientRect();
-@@ -123,12 +285,15 @@
+@@ -123,12 +288,15 @@
      check(`${name} filters start closed`, filtersDisplay === "none", filtersDisplay);
      await page.click("#filterBtn");
    }
@@ -1422,7 +1430,7 @@ diff -ruN a/space/qa/browse.mjs b/space/qa/browse.mjs
    if (narrow) await page.click("#filterBtn");
    await page.click("#pauseBtn");
    check(`${name} pause control`, (await page.locator("#pauseBtn").getAttribute("aria-pressed")) === "true" && (await readPreview(page)).motionOff === true);
-@@ -140,8 +305,13 @@
+@@ -140,8 +308,13 @@
    }, null, { timeout: 8000 });
    const view = await page.evaluate(() => window.__spacePreview.view);
    check(`${name} selected neighborhood has depth`, view.width > 220 && view.height > 120 && view.labels >= 6, JSON.stringify(view));
@@ -1437,7 +1445,7 @@ diff -ruN a/space/qa/browse.mjs b/space/qa/browse.mjs
    check(`${name} source link`, /^https:\/\//.test(shot.href || ""), shot.href || "");
    if (narrow) check(`${name} sheet leaves the galaxy visible`, view.sheet / view.innerHeight < 0.42, `${Math.round(view.sheet)}/${view.innerHeight}`);
    await page.screenshot({ path: `${out}/${path}-selected.png` });
-@@ -166,6 +336,24 @@
+@@ -166,6 +339,24 @@
    await page.waitForSelector("#pBody .srcs a");
    check(`${name} evidence control shows sources`, (await page.locator("#pBody .srcs a").count()) >= 1);
    await page.screenshot({ path: `${out}/${path}-evidence.png` });
@@ -1462,7 +1470,7 @@ diff -ruN a/space/qa/browse.mjs b/space/qa/browse.mjs
    await page.click("#homeBtn");
    await page.waitForTimeout(400);
    check(`${name} home clears selection`, (await page.locator("#panel").getAttribute("hidden")) !== null);
-@@ -210,7 +398,7 @@
+@@ -210,7 +401,7 @@
  const rpage = await reduced.newPage();
  const rbucket = { errors: [], warnings: [], failed: [] };
  attach(rpage, rbucket);
@@ -1471,7 +1479,7 @@ diff -ruN a/space/qa/browse.mjs b/space/qa/browse.mjs
  await settle(rpage);
  const rinfo = await readPreview(rpage);
  check("reduced motion starts paused", rinfo.motionOff === true && (await rpage.locator("#pauseBtn").getAttribute("aria-pressed")) === "true");
-@@ -222,16 +410,16 @@
+@@ -222,16 +413,18 @@
  const tour = await tourCtx.newPage();
  const tbucket = { errors: [], warnings: [], failed: [] };
  attach(tour, tbucket);
@@ -1485,13 +1493,15 @@ diff -ruN a/space/qa/browse.mjs b/space/qa/browse.mjs
 -  return el && /Connection:/.test(el.textContent) && /Adoption:/.test(el.textContent);
 +  return el && /Connection:/.test(el.textContent) && /Editorial:/.test(el.textContent) && /not proof an entity uses XRP/.test(el.textContent);
  });
++await tour.locator("#tEvidence summary").click();
++await tour.locator("#tCaption").scrollIntoViewIfNeeded();
  const cap1 = await tour.locator("#tCaption").innerText();
 -check("adoption tour caption", /Connection:/.test(cap1) && /Adoption:/.test(cap1), cap1.slice(0, 180));
 +check("editorial tour caption", /Connection:/.test(cap1) && /Editorial:/.test(cap1) && /not proof an entity uses XRP/.test(cap1), cap1.slice(0, 220));
  await tour.click("#tNext");
  await tour.waitForFunction((prev) => document.querySelector("#tCaption").textContent !== prev, cap1);
  const cap2 = await tour.locator("#tCaption").innerText();
-@@ -253,12 +441,12 @@
+@@ -253,12 +446,14 @@
  
  const phoneTourCtx = await browser.newContext(devices["iPhone 13"]);
  const phoneTour = await phoneTourCtx.newPage();
@@ -1503,11 +1513,13 @@ diff -ruN a/space/qa/browse.mjs b/space/qa/browse.mjs
 -await phoneTour.waitForFunction(() => /Connection:/.test(document.querySelector("#tCaption")?.textContent || "") && /Adoption:/.test(document.querySelector("#tCaption")?.textContent || ""));
 -check("phone tour caption", /Adoption:/.test(await phoneTour.locator("#tCaption").innerText()));
 +await phoneTour.waitForFunction(() => /Connection:/.test(document.querySelector("#tCaption")?.textContent || "") && /Editorial:/.test(document.querySelector("#tCaption")?.textContent || "") && /not proof an entity uses XRP/.test(document.querySelector("#tCaption")?.textContent || ""));
++await phoneTour.locator("#tEvidence summary").click();
++await phoneTour.locator("#tCaption").scrollIntoViewIfNeeded();
 +check("phone editorial tour caption", /Editorial:/.test(await phoneTour.locator("#tCaption").innerText()));
  await phoneTour.screenshot({ path: `${out}/phone-tour.png` });
  await phoneTour.click("#tNext");
  await phoneTour.click("#tStop");
-@@ -276,7 +464,7 @@
+@@ -276,7 +471,7 @@
  const sbucket = { errors: [], warnings: [], failed: [] };
  attach(sp, sbucket);
  const t1 = Date.now();
@@ -1516,7 +1528,7 @@ diff -ruN a/space/qa/browse.mjs b/space/qa/browse.mjs
  await settle(sp);
  const sboot = Date.now() - t1;
  const sinfo = await readPreview(sp);
-@@ -295,11 +483,12 @@
+@@ -295,11 +490,12 @@
  const np = await nctx.newPage();
  const nbucket = { errors: [], warnings: [], failed: [] };
  attach(np, nbucket);
@@ -1531,7 +1543,7 @@ diff -ruN a/space/qa/browse.mjs b/space/qa/browse.mjs
  const hubs = await np.locator("#fallbackList button").count();
  check("fallback lists entities before search", hubs > 0, String(hubs));
  await np.locator("#fallbackList button").first().click({ force: true });
-@@ -320,8 +509,8 @@
+@@ -320,8 +516,8 @@
  const home = await chromium.launch({ executablePath: chrome, headless: true });
  const hctx = await home.newContext();
  const hp = await hctx.newPage();

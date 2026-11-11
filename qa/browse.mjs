@@ -210,8 +210,11 @@ async function auditFilters(page) {
 }
 
 function ocr(file) {
-  try { return execFileSync("tesseract", [file, "stdout", "--psm", "6"], { encoding: "utf8" }); }
-  catch { return ""; }
+  try {
+    const scaled = `${file}.x3.png`;
+    execFileSync("ffmpeg", ["-y", "-i", file, "-vf", "scale=iw*3:ih*3:flags=neighbor", scaled], { stdio: "ignore" });
+    return execFileSync("tesseract", [scaled, "stdout", "--psm", "6"], { encoding: "utf8" });
+  } catch { return ""; }
 }
 
 async function fps(page) {
@@ -418,6 +421,8 @@ await tour.waitForFunction(() => {
   const el = document.querySelector("#tCaption");
   return el && /Connection:/.test(el.textContent) && /Editorial:/.test(el.textContent) && /not proof an entity uses XRP/.test(el.textContent);
 });
+await tour.locator("#tEvidence summary").click();
+await tour.locator("#tCaption").scrollIntoViewIfNeeded();
 const cap1 = await tour.locator("#tCaption").innerText();
 check("editorial tour caption", /Connection:/.test(cap1) && /Editorial:/.test(cap1) && /not proof an entity uses XRP/.test(cap1), cap1.slice(0, 220));
 await tour.click("#tNext");
@@ -446,6 +451,8 @@ await settle(phoneTour);
 await phoneTour.click("#tourBtn");
 await phoneTour.click('#tourList button[data-tour="adoption"]');
 await phoneTour.waitForFunction(() => /Connection:/.test(document.querySelector("#tCaption")?.textContent || "") && /Editorial:/.test(document.querySelector("#tCaption")?.textContent || "") && /not proof an entity uses XRP/.test(document.querySelector("#tCaption")?.textContent || ""));
+await phoneTour.locator("#tEvidence summary").click();
+await phoneTour.locator("#tCaption").scrollIntoViewIfNeeded();
 check("phone editorial tour caption", /Editorial:/.test(await phoneTour.locator("#tCaption").innerText()));
 await phoneTour.screenshot({ path: `${out}/phone-tour.png` });
 await phoneTour.click("#tNext");
