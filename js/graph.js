@@ -590,7 +590,7 @@ export function toursFor(model) {
     group: [],
     overview: true,
   };
-  const galaxySteps = [overview];
+  const galaxySteps = [];
   for (const id of CENTER_IDS) {
     const step = nodeStep(model, id);
     if (step) galaxySteps.push(step);
@@ -607,6 +607,7 @@ export function toursFor(model) {
       group: [],
     });
   }
+  if (galaxySteps.length >= 2) galaxySteps.push(overview);
   if (galaxySteps.length >= 3) {
     tours.push({
       id: "galaxy",

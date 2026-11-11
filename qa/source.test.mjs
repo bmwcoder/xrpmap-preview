@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { graphCandidates } from "../js/source.js";
+import { drawScale, graphCandidates } from "../js/source.js";
 
 test("source layout reads the graph beside /space/ before the public file", () => {
   const hrefs = [
@@ -13,6 +13,14 @@ test("source layout reads the graph beside /space/ before the public file", () =
     assert.equal(list[0], new URL("../graph.json", href).href);
     assert.equal(list[1], "https://xrpmap.org/graph.json");
   }
+});
+
+test("draw scale stays sharp and does not halve the picture", () => {
+  assert.equal(drawScale(1, false), 1);
+  assert.equal(drawScale(2, false), 2);
+  assert.equal(drawScale(3, false), 2);
+  assert.equal(drawScale(3, true), 1);
+  assert.equal(drawScale(1, true), 1);
 });
 
 test("preview root requests only the public graph", () => {

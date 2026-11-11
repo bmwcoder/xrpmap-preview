@@ -5,11 +5,11 @@ import {
   shellAround, toggleGrade, toggleSide, toursFor, validateGraph,
 } from "./graph.js";
 import { leaderEndpoints, settleLabelBoxes } from "./labels.js";
-import { graphCandidates } from "./source.js";
+import { drawScale, graphCandidates } from "./source.js";
 
 const CACHE_NAME = "xrpmap-space-graph-v1";
 const CACHE_REQ = new Request(new URL("./graph-cache.json", document.baseURI));
-const CODE = "space-preview-5";
+const CODE = "space-preview-6";
 
 const $ = (sel, root = document) => root.querySelector(sel);
 const $$ = (sel, root = document) => [...root.querySelectorAll(sel)];
@@ -39,6 +39,17 @@ const preview = {
   get fps() { return state.space ? state.space.fps : 0; },
   get renderer() { return state.webgl && state.webgl.renderer; },
   get software() { return !!(state.webgl && state.webgl.software); },
+  get draw() {
+    const canvas = state.space && state.space.renderer && state.space.renderer.domElement;
+    if (!canvas) return null;
+    return {
+      buffer: [canvas.width, canvas.height],
+      css: [canvas.clientWidth, canvas.clientHeight],
+      dpr: state.space.dpr,
+      device: window.devicePixelRatio || 1,
+      software: !!(state.webgl && state.webgl.software),
+    };
+  },
   get motionOff() { return state.motionOff; },
   get selected() {
     return state.sel >= 0 && state.model ? state.model.nodes[state.sel].id : null;
@@ -56,9 +67,11 @@ function reducedMotion() {
   return typeof matchMedia === "function" && matchMedia("(prefers-reduced-motion: reduce)").matches;
 }
 
-function phone() { return innerWidth < 760; }
+function phone() { return innerWidth < 760 || innerHeight < 520; }
 
 function placeChrome() {
+  const keyboard = window.visualViewport && (innerHeight - visualViewport.height) > 140;
+  document.body.classList.toggle("keyboard", !!keyboard);
   const top = $("#top")?.getBoundingClientRect().height || 62;
   const filters = $("#filters")?.getBoundingClientRect().height || 46;
   const foot = $("#foot")?.getBoundingClientRect().height || 76;
@@ -218,6 +231,10 @@ function select(index, reason) {
   if (index >= 0) {
     renderPanel();
     openPanel();
+    document.body.classList.add("used");
+    if ((reason === "label" || reason === "pick") && state.space && !state.motionOff && !state.tour) {
+      state.space.flyToNode(index);
+    }
     const id = state.model.nodes[index].id;
     if (reason !== "hash") history.pushState({ node: id }, "", `#node=${encodeURIComponent(id)}`);
   } else {
@@ -244,6 +261,12 @@ function sourceLink(url) {
   const href = safeUrl(url);
   if (!href) return '<span class="src none">No source link</span>';
   return `<a class="src" href="${escapeHtml(href)}" target="_blank" rel="noopener noreferrer">${escapeHtml(hostOf(href))} ↗</a>`;
+}
+
+function jumps(node) {
+  const neighbors = visibleNeighbors(node.i).slice().sort((a, b) => b.deg - a.deg || (a.id < b.id ? -1 : 1)).slice(0, 4);
+  if (!neighbors.length) return "";
+  return `<div class="jumps" aria-label="Connected entities">${neighbors.map((item) => `<button type="button" data-go="${item.i}">${escapeHtml(item.lbl)}</button>`).join("")}</div>`;
 }
 
 function gradeMark(grade) {
@@ -275,6 +298,7 @@ function renderPanel() {
     <p class="kicker">${escapeHtml(node.type)} · ${escapeHtml(sector)}</p>
     <h2 id="pTitle">${escapeHtml(node.label)}</h2>
     ${node.handle ? `<p class="handle">${escapeHtml(node.handle)}</p>` : ""}
+    ${jumps(node)}
     <p class="meta">${gradeMark(node.grade)} · ${all.length.toLocaleString("en-US")} connections${recordDate ? ` ·${escapeHtml(recordDate)}` : ""}</p>
     <p class="fine">${escapeHtml(GRADE_CAVEAT)} This preview has not fact-audited the whole graph.</p>
     ${node.why ? `<p class="why"><b>Research note.</b> ${escapeHtml(node.why)}</p>` : ""}
@@ -383,10 +407,44 @@ function frameFocus(index) {
   cz /= pts.length;
   let rad = 80;
   for (const [x, y, z] of pts) rad = Math.max(rad, Math.hypot(x - cx, y - cy, z - cz));
-  const dist = Math.min(5200, Math.max(700, rad / Math.sin((50 * Math.PI / 180) / 2) * 1.18));
-  const eye = space.camera.position.clone().set(cx + dist * 0.38, cy - dist * 0.78, cz + dist * 0.5);
-  const target = space.controls.target.clone().set(cx, cy, cz - (phone() ? rad * 0.55 : 0));
-  return space.flyTo(eye, target, state.motionOff ? 1 : 900);
+  const dist = Math.min(2400, Math.max(380, rad * 2.4 + 180));
+  const dir = space.camera.position.clone().sub(space.controls.target);
+  if (dir.lengthSq() < 1) dir.set(0.35, -1, 0.4);
+  dir.normalize();
+  if (dir.z < 0.22) { dir.z = 0.3; dir.normalize(); }
+  const target = space.controls.target.clone().set(cx, cy, cz);
+  const eye = target.clone().add(dir.multiplyScalar(dist));
+  return space.flyTo(eye, target, state.motionOff ? 1 : 2000);
+}
+
+function frameIds(ids, duration) {
+  const space = state.space;
+  if (!space) return Promise.resolve();
+  let cx = 0;
+  let cy = 0;
+  let cz = 0;
+  let n = 0;
+  const pts = [];
+  for (const i of ids) {
+    const x = space.nodePos[i * 3];
+    const y = space.nodePos[i * 3 + 1];
+    const z = space.nodePos[i * 3 + 2];
+    if (![x, y, z].every(Number.isFinite)) continue;
+    cx += x; cy += y; cz += z; n += 1;
+    pts.push([x, y, z]);
+  }
+  if (!n) return Promise.resolve();
+  cx /= n; cy /= n; cz /= n;
+  let rad = 48;
+  for (const p of pts) rad = Math.max(rad, Math.hypot(p[0] - cx, p[1] - cy, p[2] - cz));
+  const dist = Math.min(2200, Math.max(360, rad * 2.5 + 200));
+  const dir = space.camera.position.clone().sub(space.controls.target);
+  if (dir.lengthSq() < 1) dir.set(0.35, -1, 0.42);
+  dir.normalize();
+  if (dir.z < 0.22) { dir.z = 0.3; dir.normalize(); }
+  const target = space.controls.target.clone().set(cx, cy, cz);
+  const eye = target.clone().add(dir.multiplyScalar(dist));
+  return space.flyTo(eye, target, duration);
 }
 
 function viewMetrics() {
@@ -599,20 +657,24 @@ function webglInfo() {
 
 function simplifySpace(space) {
   const software = state.webgl.software;
-  if (software || state.motionOff || phone()) {
-    space.bloomOn = false;
-    if (space.bloom) space.bloom.enabled = false;
-  }
-  if (software || state.motionOff) {
-    space.directRender = true;
-    if (software && space.sky) space.sky.visible = false;
-    const pixels = innerWidth * innerHeight;
-    space.dpr = software ? (pixels > 700000 ? 0.5 : 0.85) : 1;
-    space.resize();
-  }
+  space.dpr = drawScale(window.devicePixelRatio, software);
+  space.directRender = true;
+  space.bloomOn = false;
+  if (space.bloom) space.bloom.enabled = false;
+  if (software && space.sky) space.sky.visible = false;
+  space.resize();
+  space.lineMul = 1.7;
+  space.scene.traverse((obj) => {
+    if (obj.isSprite && obj.scale && obj.scale.x > 500 && obj.material) {
+      obj.material.opacity = Math.min(obj.material.opacity ?? 0.4, 0.14);
+      obj.material.needsUpdate = true;
+    }
+  });
   space.motionOff = state.motionOff;
-  space.lineMul = 1;
-  space.controls.autoRotateSpeed = 0.12;
+  space.controls.rotateSpeed = phone() ? 0.48 : 0.62;
+  space.controls.dampingFactor = phone() ? 0.16 : 0.1;
+  space.controls.autoRotateSpeed = 0.08;
+  space.controls.addEventListener("start", () => document.body.classList.add("used"));
 }
 
 async function startSpace() {
@@ -657,7 +719,7 @@ async function startSpace() {
     if (info.software) {
       const note = $("#soft");
       note.hidden = false;
-      note.textContent = "Software WebGL on this browser: the full-screen sky shader is off. A real phone or tablet GPU was not measured and may be faster.";
+      note.textContent = "This browser is drawing with software WebGL, at the CSS pixel size, with the sky glow off. The 3D view is live. A physical GPU was not measured.";
     }
   } catch (error) {
     console.error(error);
@@ -708,10 +770,18 @@ function zoom(scale) {
 }
 
 function setMotion(off) {
+  const was = state.motionOff;
   state.motionOff = off;
   if (state.space) state.space.motionOff = off;
   $("#pauseBtn").setAttribute("aria-pressed", String(off));
-  $("#pauseBtn").textContent = off ? "Motion off" : "Pause";
+  $("#pauseBtn").textContent = off ? "Resume motion" : "Pause";
+  const note = $("#tMotion");
+  if (note) {
+    note.textContent = off
+      ? "Motion is paused, so the camera jumps. Resume motion to fly between steps."
+      : "";
+  }
+  if (was && !off && state.tour) showStep();
 }
 
 function fitGalaxy(duration = 900) {
@@ -789,33 +859,45 @@ async function showStep() {
   $("#tTitle").textContent = tour.title;
   $("#tCount").textContent = `${state.step + 1} of ${tour.steps.length}`;
   $("#tCaption").textContent = step.caption;
+  const motion = $("#tMotion");
+  if (motion) {
+    motion.textContent = state.motionOff
+      ? "Motion is paused, so the camera jumps. Resume motion to fly between steps."
+      : "";
+  }
   $("#tSource").innerHTML = step.source ? sourceLink(step.source) : "";
   $("#tPrev").disabled = state.step === 0;
   $("#tNext").textContent = state.step === tour.steps.length - 1 ? "Done" : "Next";
   state.space.tourOn = true;
   state.space.setPath((step.path || []).map((p) => ({ a: p.a, b: p.b })));
   state.space.setGroup(step.group && step.group.length ? step.group : null);
+  const dur = state.motionOff ? 1 : 2100;
   if (step.overview) {
     state.space.select(-1, false);
     state.sel = -1;
     closePanel();
-    await fitGalaxy(state.motionOff ? 1 : 900);
+    await fitGalaxy(dur);
   } else if (step.sector) {
     const anchor = state.space.sectorAnchors.find((item) => item.sec.id === step.sector);
     if (anchor) {
-      const dist = phone() ? 2600 : 1900;
-      const dest = anchor.center.clone();
       const approach = state.space.camera.position.clone().sub(state.space.controls.target);
-      if (approach.lengthSq() < 1) approach.set(1, -1, 0.4);
-      dest.add(approach.normalize().multiplyScalar(dist));
-      await state.space.flyTo(dest, anchor.center.clone(), state.motionOff ? 1 : 1500);
+      if (approach.lengthSq() < 1) approach.set(0.4, -1, 0.35);
+      approach.normalize();
+      if (approach.z < 0.22) { approach.z = 0.3; approach.normalize(); }
+      const dest = anchor.center.clone().add(approach.multiplyScalar(phone() ? 1500 : 1200));
+      await state.space.flyTo(dest, anchor.center.clone(), dur);
     }
-  } else if (step.focus >= 0) {
-    state.sel = step.focus;
-    state.space.select(step.focus, false);
-    applyFocusLayout(step.focus);
-    renderPanel();
-    await frameFocus(step.focus);
+  } else if (step.focus >= 0 || (step.path && step.path.length)) {
+    const ids = [];
+    for (const pair of step.path || []) ids.push(pair.a, pair.b);
+    if (step.focus >= 0) ids.push(step.focus);
+    applyFocusLayout(-1);
+    if (step.focus >= 0) {
+      state.sel = step.focus;
+      state.space.select(step.focus, false);
+      renderPanel();
+    }
+    await frameIds(ids, dur);
   }
 }
 
@@ -906,6 +988,29 @@ function bindChrome() {
   });
   $("#tStop").addEventListener("click", () => stopTour(true));
   $("#helpBtn").addEventListener("click", () => { $("#help").hidden = false; });
+  $("#labels3d").addEventListener("click", (event) => {
+    const span = event.target.closest(".lab span");
+    if (!span || !state.model || !state.space) return;
+    const lab = span.closest(".lab");
+    if (!lab || lab.classList.contains("sl")) return;
+    const rect = span.getBoundingClientRect();
+    const cx = (rect.left + rect.right) / 2;
+    const cy = (rect.top + rect.bottom) / 2;
+    let best = null;
+    for (const node of state.model.nodes) {
+      if (node.lbl !== span.textContent || !state.model.vn[node.i]) continue;
+      const projected = state.space.nodeVec(node.i).clone().project(state.space.camera);
+      if (projected.z > 1) continue;
+      const x = (projected.x + 1) / 2 * state.space.w;
+      const y = (1 - projected.y) / 2 * state.space.h;
+      const d = Math.hypot(x - cx, y - cy);
+      if (!best || d < best.d) best = { i: node.i, d };
+    }
+    if (!best) return;
+    event.preventDefault();
+    event.stopPropagation();
+    select(best.i, "label");
+  });
   $$("[data-close]").forEach((btn) => btn.addEventListener("click", () => { btn.closest(".modal").hidden = true; }));
   $("#panel").addEventListener("click", (event) => {
     const more = event.target.closest(".more-btn");
@@ -1036,6 +1141,7 @@ async function main() {
   };
   searchPlaceholder();
   addEventListener("resize", () => { searchPlaceholder(); placeChrome(); });
+  if (window.visualViewport) visualViewport.addEventListener("resize", () => placeChrome());
   syncFilterButtons();
   renderTours();
   renderLatest();
