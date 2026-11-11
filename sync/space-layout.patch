@@ -1,6 +1,6 @@
 diff -ruN a/space/css/app.css b/space/css/app.css
 --- a/space/css/app.css	2026-11-11 16:02:35.921286940 +0000
-+++ b/space/css/app.css	2026-11-11 16:35:02.630751079 +0000
++++ b/space/css/app.css	2026-11-11 16:46:35.373915275 +0000
 @@ -32,13 +32,16 @@
  #space { position: absolute; inset: 0; }
  #space canvas.gl { position: absolute; inset: 0; z-index: 1; width: 100%; height: 100%; display: block; touch-action: none; }
@@ -28,19 +28,47 @@ diff -ruN a/space/css/app.css b/space/css/app.css
  #filters button { flex: none; white-space: nowrap; }
  #filters button[aria-pressed="true"] { background: #2a2416; border-color: rgba(230, 193, 90, .7); color: var(--gold); }
  .sep { width: 1px; align-self: stretch; background: var(--line); flex: none; }
+@@ -89,6 +92,7 @@
+ .srcs { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin: 8px 0 12px; }
+ .src { border: 1px solid var(--line); border-radius: 999px; padding: 3px 8px; text-decoration: none; }
+ .src.none { color: var(--muted); }
++.unsourced { color: var(--warn); margin: 8px 0; }
+ .g { display: inline-grid; place-items: center; min-width: 1.3em; border-radius: 4px; font-size: 12px; padding: 0 4px; }
+ .gA { background: #1f6b45; } .gB { background: #7a5a16; } .gC { background: #3d4658; } .gX { background: #7a2e2e; } .gU { background: #3d4658; }
+ .side { font-size: 13px; }
 diff -ruN a/space/index.html b/space/index.html
 --- a/space/index.html	2026-11-11 16:02:35.921286940 +0000
-+++ b/space/index.html	2026-11-11 16:35:03.090737563 +0000
++++ b/space/index.html	2026-11-11 16:45:47.081589251 +0000
+@@ -60,9 +60,9 @@
+   <button type="button" data-grade="C" aria-pressed="false">C claim</button>
+   <button type="button" data-grade="X" aria-pressed="false">X false</button>
+   <span class="sep" aria-hidden="true"></span>
+-  <button type="button" data-side="supports" aria-pressed="false">Supports adoption</button>
++  <button type="button" data-side="supports" aria-pressed="false">Editorial: supports thesis</button>
+   <button type="button" data-side="neutral" aria-pressed="false">Not about adoption</button>
+-  <button type="button" data-side="contradicts" aria-pressed="false">Contradicts adoption</button>
++  <button type="button" data-side="contradicts" aria-pressed="false">Editorial: counters thesis</button>
+ </nav>
+ 
+ <div id="banner" class="banner" role="status" hidden></div>
 @@ -96,7 +96,7 @@
  
  <footer id="foot">
    <p id="counts" aria-live="polite"></p>
 -  <p><time id="updated"></time> · <span id="dataFrom"></span> · code <span id="code">space-preview-2</span> · <button type="button" id="reloadBtn">Check for a newer graph</button></p>
-+  <p><time id="updated"></time> · <span id="dataFrom"></span> · code <span id="code">space-preview-4</span> · <button type="button" id="reloadBtn">Check for a newer graph</button></p>
++  <p><time id="updated"></time> · <span id="dataFrom"></span> · code <span id="code">space-preview-5</span> · <button type="button" id="reloadBtn">Check for a newer graph</button></p>
    <p id="soft" class="legal" hidden></p>
    <p class="legal">Not investment advice. A line is a connection, not adoption. The author holds XRP. <a href="https://xrpmap.org/">Current map</a>. Unlisted preview, not private.</p>
    <details id="latest">
-@@ -115,7 +115,7 @@
+@@ -110,12 +110,13 @@
+     <button type="button" class="x" data-close aria-label="Close help">Close</button>
+     <h2 id="helpTitle">How to read this preview</h2>
+     <p><b>Connections</b> are lines. Each line means a public source ties two entities in the way the label says. Size is how many connections an entity has. A connection is not a partnership, control, or wrongdoing unless the label and the source say so.</p>
+-    <p><b>Adoption</b> is a separate mark on a connection: supports XRP or Ripple payment-rail adoption, is not about that question, or contradicts it. Both directions are drawn. Filtering to “supports adoption” hides the rest; it does not turn those connections into adoption.</p>
+-    <p><b>Grades</b> rate the source, not the person. A is a primary or official record. B is reputable reporting. C is an unverified claim. X was checked and found false.</p>
++    <p><b>Editorial marks</b> are the graph’s stored side field. The controls read “Editorial: supports thesis”, “Not about adoption”, and “Editorial: counters thesis”. These are editorial assessments from the research map, not proof an entity uses XRP. Read the connection and its source. Filtering hides other lines. It does not turn a connection into adoption.</p>
++    <p><b>Grades</b> are the map’s stored classification of a source, not proof the whole description was verified. A is a primary or official source. B is reputable reporting. C is an unverified claim. X was checked and found false. Grade C does not replace a missing source.</p>
++    <p><b>Research summaries</b> may contain dated figures. They are not live quotes. The record date is shown beside the summary. The time in the footer is the graph file’s date, not a fact audit. This preview has not fact-audited the whole graph.</p>
      <p>The view opens on <b>key connections</b>, the smaller set marked in the public graph. “All connections” draws every link in the file. Home clears a selection and returns to key connections.</p>
      <p>Drag to orbit, scroll or pinch to zoom, tap a point or search to inspect sources. Arrow keys orbit when the galaxy is focused. Slash focuses search. Escape closes this dialog, a tour, then the details.</p>
      <p>Pause motion stops the slow orbit, the star shimmer, and the fly-to glide. Reduced-motion settings start paused. If WebGL is missing, search and the written record stay available.</p>
@@ -51,8 +79,12 @@ diff -ruN a/space/index.html b/space/index.html
  </div>
 diff -ruN a/space/js/app.js b/space/js/app.js
 --- a/space/js/app.js	2026-11-11 16:02:35.921286940 +0000
-+++ b/space/js/app.js	2026-11-11 16:35:25.518103369 +0000
-@@ -4,11 +4,12 @@
++++ b/space/js/app.js	2026-11-11 16:45:56.013644895 +0000
+@@ -1,14 +1,15 @@
+ import {
+-  CENTER_IDS, GRADE_TEXT, GRADES, SIDE_HINT, SIDE_TEXT, SIDES,
++  CENTER_IDS, EDITORIAL_CAVEAT, GRADE_CAVEAT, GRADE_TEXT, GRADES, SIDE_HINT, SIDE_TEXT, SIDES,
+   adoptionTally, applyFilters, createModel, defaultFilters, edgesOf,
    escapeHtml, formatUpdated, hostOf, latestEdges, safeUrl, searchNodes,
    shellAround, toggleGrade, toggleSide, toursFor, validateGraph,
  } from "./graph.js";
@@ -63,7 +95,7 @@ diff -ruN a/space/js/app.js b/space/js/app.js
  const CACHE_REQ = new Request(new URL("./graph-cache.json", document.baseURI));
 -const CODE = "space-preview-2";
 -const PUBLIC_GRAPH = "https://xrpmap.org/graph.json";
-+const CODE = "space-preview-4";
++const CODE = "space-preview-5";
  
  const $ = (sel, root = document) => root.querySelector(sel);
  const $$ = (sel, root = document) => [...root.querySelectorAll(sel)];
@@ -76,8 +108,12 @@ diff -ruN a/space/js/app.js b/space/js/app.js
    const errors = [];
    for (const href of candidates) {
      try {
-@@ -163,6 +164,8 @@
-   $("#updated").textContent = `Graph updated ${formatUpdated(m.meta.updated)}`;
+@@ -160,9 +161,11 @@
+ function paintCounts() {
+   const m = state.model;
+   $("#counts").textContent = countsText();
+-  $("#updated").textContent = `Graph updated ${formatUpdated(m.meta.updated)}`;
++  $("#updated").textContent = `Graph file dated ${formatUpdated(m.meta.updated)}`;
    $("#updated").dateTime = m.meta.updated;
    $("#updated").title = m.meta.updated;
 +  const code = $("#code");
@@ -85,7 +121,48 @@ diff -ruN a/space/js/app.js b/space/js/app.js
    const from = $("#dataFrom");
    if (from) {
      if (state.source === "cache") from.textContent = "Showing a copy saved in this browser.";
-@@ -449,6 +452,132 @@
+@@ -265,19 +268,24 @@
+     if (!groups.has(other.type)) groups.set(other.type, []);
+     groups.get(other.type).push([edge, other]);
+   }
+-  const sources = node.sources.map(sourceLink).join("");
++  const hrefs = (node.sources || []).map((item) => safeUrl(item)).filter(Boolean);
++  const recordDate = node.added ? ` Record date ${formatUpdated(node.added)}.` : "";
+   const body = $("#pBody");
+   body.innerHTML = `
+     <p class="kicker">${escapeHtml(node.type)} · ${escapeHtml(sector)}</p>
+     <h2 id="pTitle">${escapeHtml(node.label)}</h2>
+     ${node.handle ? `<p class="handle">${escapeHtml(node.handle)}</p>` : ""}
+-    <p class="meta">${gradeMark(node.grade)} · ${all.length.toLocaleString("en-US")} connections${node.added ? ` · added ${escapeHtml(formatUpdated(node.added))}` : ""}</p>
+-    ${node.why ? `<p class="why"><b>Why it is here.</b> ${escapeHtml(node.why)}</p>` : ""}
+-    ${node.summary ? `<p class="sum">${escapeHtml(node.summary)}</p>` : ""}
+-    <div class="srcs"><b>Entity sources</b> ${sources || '<span class="src none">None stored</span>'}</div>
++    <p class="meta">${gradeMark(node.grade)} · ${all.length.toLocaleString("en-US")} connections${recordDate ? ` ·${escapeHtml(recordDate)}` : ""}</p>
++    <p class="fine">${escapeHtml(GRADE_CAVEAT)} This preview has not fact-audited the whole graph.</p>
++    ${node.why ? `<p class="why"><b>Research note.</b> ${escapeHtml(node.why)}</p>` : ""}
++    ${node.summary ? `<p class="sum"><b>Research summary.</b> It may contain dated figures; it is not a live quote.${escapeHtml(recordDate)} ${escapeHtml(node.summary)}</p>` : ""}
++    ${hrefs.length
++      ? `<div class="srcs"><b>Entity sources</b> ${hrefs.map(sourceLink).join("")}</div>`
++      : `<p class="unsourced"><b>No source stored.</b> The research summary is unverified.</p>`}
+     <div class="split">
+-      <p><b>Connections</b> are sourced links between two entities. A connection is not adoption, a partnership, or an accusation.</p>
+-      <p><b>Adoption</b> is a separate mark on each connection: ${tally.supports} support it, ${tally.contradicts} contradict it, ${tally.neutral} are not about adoption.</p>
++      <p><b>Connections</b> keep the raw label from the graph. A connection is not adoption, a partnership, or an accusation.</p>
++      <p class="caveat">${escapeHtml(EDITORIAL_CAVEAT)}</p>
++      <p><b>${escapeHtml(SIDE_TEXT.supports)}</b> ${tally.supports.toLocaleString("en-US")}. <b>${escapeHtml(SIDE_TEXT.contradicts)}</b> ${tally.contradicts.toLocaleString("en-US")}. <b>${escapeHtml(SIDE_TEXT.neutral)}</b> ${tally.neutral.toLocaleString("en-US")}.</p>
+       <p>Around this entity, space shows only its real connections, moved nearby so the names can be read. Nothing is added. Home puts every entity back in the galaxy.</p>
+     </div>
+     ${[...groups.entries()].map(([type, rows]) => `
+@@ -292,7 +300,7 @@
+         ${rows.length > 6 ? `<button type="button" class="text more-btn">Show ${rows.length - 6} more</button>` : ""}
+       </details>`).join("")}
+     ${all.length ? "" : '<p class="sum">No connections are stored for this entity.</p>'}
+-    <p class="fine">Grades describe the source. The adoption mark describes the XRP / Ripple rails question. Read the linked source.</p>`;
++    <p class="fine">Raw connection labels, sides, grades, and source links are shown as stored. Nothing here reclassifies them.</p>`;
+   body.scrollTop = 0;
+ }
+ 
+@@ -449,6 +457,132 @@
    return out;
  }
  
@@ -218,7 +295,7 @@ diff -ruN a/space/js/app.js b/space/js/app.js
  function webglInfo() {
    try {
      const canvas = document.createElement("canvas");
-@@ -495,7 +624,10 @@
+@@ -495,7 +629,10 @@
      const { Space } = await import("./space-WZLWI5EC.js");
      const space = new Space($("#space"), $("#labels3d"), state.model, {
        onPick: (index) => select(index, "pick"),
@@ -230,7 +307,7 @@ diff -ruN a/space/js/app.js b/space/js/app.js
        preserve: /shots/.test(location.search),
        software: info.software,
      });
-@@ -604,8 +736,12 @@
+@@ -604,8 +741,12 @@
    const vLimit = rad / Math.sin(fov / 2);
    const hFov = 2 * Math.atan(Math.tan(fov / 2) * aspect);
    const hLimit = rad / Math.sin(hFov / 2);
@@ -245,6 +322,80 @@ diff -ruN a/space/js/app.js b/space/js/app.js
    const eye = space.camera.position.clone().set(cx + dist * 0.2, cy - dist * 0.86, cz + dist * 0.38);
    const target = space.controls.target.clone().set(cx, cy, cz);
    return space.flyTo(eye, target, state.motionOff ? 1 : duration);
+diff -ruN a/space/js/graph.js b/space/js/graph.js
+--- a/space/js/graph.js	2026-11-11 16:02:35.921286940 +0000
++++ b/space/js/graph.js	2026-11-11 16:45:43.217565855 +0000
+@@ -9,22 +9,26 @@
+ export const CENTER_IDS = ["xrp", "ripple", "xrpl"];
+ 
+ export const GRADE_TEXT = {
+-  A: "Primary or official source",
+-  B: "Reputable reporting",
+-  C: "Unverified claim",
+-  X: "Checked and found false",
++  A: "Stored grade A · primary or official source",
++  B: "Stored grade B · reputable reporting",
++  C: "Stored grade C · unverified claim",
++  X: "Stored grade X · checked and found false",
+ };
+ 
++export const GRADE_CAVEAT = "A grade is the map’s stored classification of the source, not proof the whole description was verified.";
++
++export const EDITORIAL_CAVEAT = "These are editorial assessments from the research map, not proof an entity uses XRP. Read the connection and its source.";
++
+ export const SIDE_TEXT = {
+-  supports: "Adoption: supports",
+-  neutral: "Adoption: not about adoption",
+-  contradicts: "Adoption: contradicts",
++  supports: "Editorial: supports adoption thesis",
++  neutral: "Not about adoption",
++  contradicts: "Editorial: counters adoption thesis",
+ };
+ 
+ export const SIDE_HINT = {
+-  supports: "This connection is also evidence that supports XRP or Ripple payment-rail adoption.",
+-  neutral: "This is a connection only. It does not say whether adoption is happening.",
+-  contradicts: "This connection is evidence against XRP or Ripple payment-rail adoption.",
++  supports: "Editorial assessment that this connection fits an adoption thesis. Not proof the entity uses XRP.",
++  neutral: "The research map does not treat this connection as about adoption.",
++  contradicts: "Editorial assessment that this connection counters an adoption thesis. Not proof of non-use.",
+ };
+ 
+ const TYPE_SECTOR = {
+@@ -514,7 +518,7 @@
+   const B = model.nodes[edge.b];
+   return {
+     title: `${A.label} → ${B.label}`,
+-    caption: `${A.label} → ${B.label}. Connection: ${edge.label}. Source grade ${edge.grade} (${GRADE_TEXT[edge.grade]}). ${SIDE_TEXT[edge.side]}.`,
++    caption: `${A.label} → ${B.label}. Connection: ${edge.label}. Source grade ${edge.grade} (${GRADE_TEXT[edge.grade]}). ${GRADE_CAVEAT} ${SIDE_TEXT[edge.side]}. ${EDITORIAL_CAVEAT}`,
+     source: edge.source,
+     focus: focus === undefined ? edge.a : focus,
+     path: [{ a: edge.a, b: edge.b }],
+@@ -528,10 +532,12 @@
+   const node = model.nodes[i];
+   const text = (node.why || node.summary || "").replace(/\s+/g, " ").trim();
+   const clip = text.length > 280 ? `${text.slice(0, 277)}…` : text;
++  const dated = node.added ? ` Record date ${node.added}.` : "";
++  const storedSource = (node.sources || []).some((item) => safeUrl(item));
+   return {
+     title: node.label,
+     caption: clip
+-      ? `${node.label}. Source grade ${node.grade || "—"} (${GRADE_TEXT[node.grade] || "not graded"}). ${clip}`
++      ? `${node.label}. Source grade ${node.grade || "—"} (${GRADE_TEXT[node.grade] || "not graded"}). ${GRADE_CAVEAT} Research summary. It may contain dated figures; it is not a live quote.${dated} ${clip}${storedSource ? "" : " No source stored. The research summary is unverified."}`
+       : `${node.label}. Source grade ${node.grade || "—"}. No summary is stored on this entity.`,
+     source: (node.sources || []).find((s) => safeUrl(s)) || "",
+     focus: i,
+@@ -568,8 +574,8 @@
+   if (picked.length < 2) return null;
+   return {
+     id: "adoption",
+-    title: "Connection or adoption?",
+-    blurb: "Three current links, when the graph has them: one that supports adoption, one that does not address it, and one that contradicts it.",
++    title: "Editorial marks",
++    blurb: "Three stored marks, when the file has them: editorial support for an adoption thesis, not about adoption, and an editorial counter. Not proof an entity uses XRP.",
+     steps: picked,
+   };
+ }
 diff -ruN a/space/js/labels.js b/space/js/labels.js
 --- a/space/js/labels.js	1970-01-01 00:00:00.000000000 +0000
 +++ b/space/js/labels.js	2026-11-11 16:35:00.082826274 +0000
@@ -348,9 +499,168 @@ diff -ruN a/space/js/source.js b/space/js/source.js
 +  if (!path.endsWith("/space/")) return [publicGraph];
 +  return [new URL("../graph.json", url).href, publicGraph];
 +}
+diff -ruN a/space/qa/accuracy-findings.md b/space/qa/accuracy-findings.md
+--- a/space/qa/accuracy-findings.md	1970-01-01 00:00:00.000000000 +0000
++++ b/space/qa/accuracy-findings.md	2026-11-11 16:46:49.474021717 +0000
+@@ -0,0 +1,155 @@
++# Accuracy findings for human triage
++
++Screening notes for the public graph. They are not a fact audit and not a reclassification of the 6,705 connections.
++
++File examined: `https://xrpmap.org/graph.json`
++Graph file `meta.updated`: `2026-11-11T10:28:17-05:00` · `meta.version`: `3`
++Entities: 2372. Connections: 6705.
++Stored sides: {'neutral': 4131, 'supports': 1889, 'contradicts': 685}.
++Stored grades: {'A': 5960, 'B': 599, 'C': 124, 'X': 22}.
++
++The snapshot fixture in `qa/graph.test.mjs` is a different file: `2026-11-11T08:25:56-05:00`, 2,371 entities, 6,704 connections. It is not this live file.
++
++## How to read the counts
++
++Keyword counts are screening signals, not definitive misclassifications. A sentence can contain “adopted” and still not be about XRP adoption.
++
++Screen: `side=supports` and the label does not contain adopt/payment/rail/xrp/rlusd/odl/on-demand/bridge/settlement: **818** of 1889 supports marks.
++Screen: `side=neutral` and the label contains “adopt” or “partnership”: **52**.
++
++### Not a misclassification by itself
++
++- `evernorth-mnda-2025` → `evernorth-bca-2025` · side `neutral` · grade `A` · key `False`
++  - label: adopted as confidentiality standard in BCA §8.14
++  - source: https://www.sec.gov/Archives/edgar/data/2092592/000119312526347519/d944435ds4a.htm
++  - added: 2026-10-19T22:56:09-04:00
++  - The word “adopted” here is a confidentiality standard inside a contract clause. It is not XRP adoption. Do not treat this keyword hit as a wrong side.
++
++## Exact examples for later review
++
++### Supports mark, label is a founding, investment, or purchase
++
++- `mccaleb` → `xrpl` · side `supports` · grade `A` · key `None`
++  - label: co-created (2011–12)
++  - source: https://xrpl.org/about/history
++  - added: 2026-10-19T06:36:00-04:00
++
++- `schwartz` → `xrpl` · side `supports` · grade `A` · key `None`
++  - label: co-created / architect
++  - source: https://xrpl.org/about/history
++  - added: 2026-10-19T06:36:00-04:00
++
++- `britto` → `xrpl` · side `supports` · grade `A` · key `None`
++  - label: co-created
++  - source: https://xrpl.org/about/history
++  - added: 2026-10-19T06:36:00-04:00
++
++- `a16z` → `opencoin` · side `supports` · grade `A` · key `None`
++  - label: 2013 angel round — primary release
++  - source: https://www.globenewswire.com/news-release/2013/04/11/1146545/0/en/opencoin-developer-of-ripple-protocol-closes-funding-from-andreessen-horowitz-ff-angel-iv-lightspeed-venture-partners-and-angel-investors.html
++  - added: 2026-10-19T21:20:00-04:00
++
++- `ffangel` → `opencoin` · side `supports` · grade `A` · key `None`
++  - label: 2013 angel round — primary release
++  - source: https://www.globenewswire.com/news-release/2013/04/11/1146545/0/en/opencoin-developer-of-ripple-protocol-closes-funding-from-andreessen-horowitz-ff-angel-iv-lightspeed-venture-partners-and-angel-investors.html
++  - added: 2026-10-19T21:20:00-04:00
++
++- `ripple` → `rprime` · side `supports` · grade `A` · key `True`
++  - label: acquired Hidden Road for $1.25B (announced Apr 8, 2025; closed Oct 24, 2025) → Ripple Prime
++  - source: https://ripple.com/ripple-press/ripple-acquires-prime-broker-hidden-road/
++  - added: 2026-10-19T06:36:00-04:00
++
++- `ripple` → `gtreasury` · side `supports` · grade `A` · key `True`
++  - label: acquired $1B (2025)
++  - source: https://ripple.com/ripple-press/ripple-breaks-into-corporate-treasury-with-gtreasury-acquisition/
++  - added: 2026-10-19T06:36:00-04:00
++
++- `ripple` → `rail` · side `supports` · grade `A` · key `True`
++  - label: acquired $200M (2025)
++  - source: https://ripple.com/ripple-press/ripple-to-acquire-rail-for-200m-expanding-leadership-in-stablecoin-payments/
++  - added: 2026-10-19T06:36:00-04:00
++
++- `ripple` → `metaco` · side `supports` · grade `A` · key `True`
++  - label: acquired $250M (2023)
++  - source: https://ripple.com/ripple-press/leading-enterprise-crypto-company-ripple-acquires-custody-provider-metaco-for-250m/
++  - added: 2026-10-19T06:36:00-04:00
++
++### Neutral mark, label uses adopted or partnership
++
++- `evernorth-mnda-2025` → `evernorth-bca-2025` · side `neutral` · grade `A` · key `False`
++  - label: adopted as confidentiality standard in BCA §8.14
++  - source: https://www.sec.gov/Archives/edgar/data/2092592/000119312526347519/d944435ds4a.htm
++  - added: 2026-10-19T22:56:09-04:00
++
++- `irc` → `ripple` · side `neutral` · grade `A` · key `False`
++  - label: humanitarian partnership; Ripple pledged $1M (2024-10-16)
++  - source: https://ripple.com/ripple-press/ripple-and-international-rescue-committee-partner-to-innovate-humanitarian-aid-delivery/
++  - added: 2026-10-19T22:56:09-04:00
++
++- `edofarina` → `xrphealthcare` · side `neutral` · grade `A` · key `False`
++  - label: former 'Head of Social Adoption' (2023 bio)
++  - source: https://www.prnewswire.com/news-releases/xrp-healthcare-advances-as-xrpl-validator---strengthening-crypto-transparency-302034187.html
++  - added: 2026-10-19T22:56:09-04:00
++
++- `unicredit` → `ripplenet` · side `neutral` · grade `A` · key `False`
++  - label: adopted Ripple 2016-06-22
++  - source: https://ripple.com/insights/seven-leading-banks-join-ripples-global-network/
++  - added: 2026-10-19T23:02:33-04:00
++
++- `ubs` → `ripple` · side `neutral` · grade `A` · key `False`
++  - label: named among banks adopting Ripple 2016-06-22
++  - source: https://ripple.com/insights/seven-leading-banks-join-ripples-global-network/
++  - added: 2026-10-19T23:02:33-04:00
++
++- `ripple` → `hashkey-dx` · side `neutral` · grade `A` · key `False`
++  - label: partnership for XRPL enterprise solutions in Japan (2024-04-29)
++  - source: https://ripple.com/ripple-press/ripple-joins-forces-with-hashkey-dx-to-introduce-xrp-ledger-powered/
++  - added: 2026-10-19T23:02:33-04:00
++
++### Contradicts mark on an Open USD partner sentence
++
++The stored sentence does not say the source opposes XRP adoption. The side is an editorial inference.
++
++- `sbi` → `openusd` · side `contradicts` · grade `A` · key `None`
++  - label: named Open USD partner
++  - source: https://joinopenstandard.com/partners/
++  - added: 2026-10-19T19:54:00-04:00
++
++- `stanchart` → `openusd` · side `contradicts` · grade `A` · key `None`
++  - label: named Open USD partner
++  - source: https://joinopenstandard.com/partners/
++  - added: 2026-10-19T19:54:00-04:00
++
++- `blackrock` → `openusd` · side `contradicts` · grade `A` · key `None`
++  - label: named Open USD partner
++  - source: https://joinopenstandard.com/partners/
++  - added: 2026-10-19T19:54:00-04:00
++
++- `visa` → `openusd` · side `contradicts` · grade `A` · key `None`
++  - label: Open USD partner
++  - source: https://joinopenstandard.com/partners/
++  - added: 2026-10-19T21:55:00-04:00
++
++## Dated figures, not live quotes
++
++- `xrp` · grade `A` · added `2026-10-19T06:36:00-04:00`
++  - summary: Native asset of the XRP Ledger; 100B created at genesis, no mining. ~$1.30 on 2026-10-19 (#5 by market cap). Ripple holds ~31.4B in escrow (~300M/month net release).
++  - sources: ['https://xrpl.org/docs/introduction/what-is-xrp', 'https://www.coingecko.com/en/coins/xrp', 'https://xrp-insights.com/xrp-radar/escrow']
++
++- `rlusd` · grade `A` · added `2026-10-19T06:36:00-04:00`
++  - summary: Ripple's USD stablecoin, NYDFS-approved 2024-12-10, launched 2024-12-17. Issued by Standard Custody & Trust; BNY primary reserve custodian. ~$2.37B supply (Oct 19).
++  - sources: ['https://ripple.com/ripple-press/raising-the-standard-for-stablecoins-ripple-usd-launches-globally/', 'https://ripple.com/products/stablecoin/']
++
++## No source stored
++
++Grade C does not fill this gap. The preview says no source is stored and the summary is unverified.
++
++- `tria` · Tria · grade `C` · added `2026-10-29T08:24:45-04:00` · sources `[]`
++  - summary: Self-custody crypto neobank. XRP Ledger support live in its app (hold XRP, RLUSD, USDC; card top-up; futures margin) per its own blog; unveiled an XRPL-based 2027 roadmap at Swell 2026.
++
++- `arco-fi` · Arco · grade `C` · added `2026-10-29T08:24:45-04:00` · sources `[]`
++  - summary: Building tokenized asset allocation tools (Arco Vault). Signed an MOU with t54 (Oct 29 2026) to explore connecting Arco Vault to XRPL; per t54's post only, Arco has not posted it.
++
++## Not done
++
++Source URLs were copied from the file. They were not opened one by one. No connection was reclassified.
 diff -ruN a/space/qa/browse.mjs b/space/qa/browse.mjs
 --- a/space/qa/browse.mjs	2026-11-11 16:02:35.921286940 +0000
-+++ b/space/qa/browse.mjs	2026-11-11 16:35:44.817595011 +0000
++++ b/space/qa/browse.mjs	2026-11-11 16:46:25.241841851 +0000
 @@ -1,15 +1,21 @@
  /**
   * Browser QA for the Space preview. Not part of the page.
@@ -592,7 +902,7 @@ diff -ruN a/space/qa/browse.mjs b/space/qa/browse.mjs
    if (narrow) await page.click("#filterBtn");
    await page.click("#pauseBtn");
    check(`${name} pause control`, (await page.locator("#pauseBtn").getAttribute("aria-pressed")) === "true" && (await readPreview(page)).motionOff === true);
-@@ -140,6 +305,11 @@
+@@ -140,8 +305,13 @@
    }, null, { timeout: 8000 });
    const view = await page.evaluate(() => window.__spacePreview.view);
    check(`${name} selected neighborhood has depth`, view.width > 220 && view.height > 120 && view.labels >= 6, JSON.stringify(view));
@@ -602,9 +912,37 @@ diff -ruN a/space/qa/browse.mjs b/space/qa/browse.mjs
 +  check(`${name} selected label leaders`, selectedAnchors.problems.length === 0, selectedAnchors.problems.slice(0, 4).join("; ") || `${selectedAnchors.lines} leaders`);
 +  check(`${name} selected name visible`, selectedAudit.labels.some((text) => /^XRP\b/.test(text)), selectedAudit.labels.join(" | ").slice(0, 180));
    check(`${name} selected XRP`, shot.title === "XRP", shot.title);
-   check(`${name} grade and adoption copy`, /Primary or official source/.test(shot.text) && /Connections/.test(shot.text) && /Adoption/.test(shot.text), shot.text.slice(0, 180));
+-  check(`${name} grade and adoption copy`, /Primary or official source/.test(shot.text) && /Connections/.test(shot.text) && /Adoption/.test(shot.text), shot.text.slice(0, 180));
++  check(`${name} grade and editorial copy`, /primary or official source/i.test(shot.text) && /Connections/.test(shot.text) && /Editorial: supports adoption thesis/.test(shot.text) && /Editorial: counters adoption thesis/.test(shot.text) && /Not about adoption/.test(shot.text) && /not proof an entity uses XRP/.test(shot.text) && /not a live quote/.test(shot.text) && /Research summary/.test(shot.text) && /Record date/.test(shot.text), shot.text.slice(0, 280));
    check(`${name} source link`, /^https:\/\//.test(shot.href || ""), shot.href || "");
-@@ -210,7 +380,7 @@
+   if (narrow) check(`${name} sheet leaves the galaxy visible`, view.sheet / view.innerHeight < 0.42, `${Math.round(view.sheet)}/${view.innerHeight}`);
+   await page.screenshot({ path: `${out}/${path}-selected.png` });
+@@ -166,6 +336,24 @@
+   await page.waitForSelector("#pBody .srcs a");
+   check(`${name} evidence control shows sources`, (await page.locator("#pBody .srcs a").count()) >= 1);
+   await page.screenshot({ path: `${out}/${path}-evidence.png` });
++  if (name === "desktop") {
++    const bare = await page.evaluate(() => {
++      const model = window.__spacePreview.engine.s;
++      const node = model.nodes.find((item) => !(item.sources || []).some((src) => /^https?:\/\//.test(src)));
++      return node ? node.label : "";
++    });
++    check("unsourced entity exists in this file", bare.length > 0, bare || "every entity has an http source");
++    if (bare) {
++      await page.fill("#q", bare);
++      await page.waitForSelector("#results button");
++      await page.keyboard.press("Enter");
++      await page.waitForSelector("#panel:not([hidden]) .unsourced");
++      const unsourced = await page.locator("#panel .unsourced").innerText();
++      check("no source stored and unverified summary", /No source stored/.test(unsourced) && /unverified/.test(unsourced), unsourced.slice(0, 180));
++      await page.screenshot({ path: `${out}/desktop-unsourced.png` });
++      await page.click("#homeBtn");
++    }
++  }
+   await page.click("#homeBtn");
+   await page.waitForTimeout(400);
+   check(`${name} home clears selection`, (await page.locator("#panel").getAttribute("hidden")) !== null);
+@@ -210,7 +398,7 @@
  const rpage = await reduced.newPage();
  const rbucket = { errors: [], warnings: [], failed: [] };
  attach(rpage, rbucket);
@@ -613,7 +951,7 @@ diff -ruN a/space/qa/browse.mjs b/space/qa/browse.mjs
  await settle(rpage);
  const rinfo = await readPreview(rpage);
  check("reduced motion starts paused", rinfo.motionOff === true && (await rpage.locator("#pauseBtn").getAttribute("aria-pressed")) === "true");
-@@ -222,7 +392,7 @@
+@@ -222,16 +410,16 @@
  const tour = await tourCtx.newPage();
  const tbucket = { errors: [], warnings: [], failed: [] };
  attach(tour, tbucket);
@@ -622,7 +960,18 @@ diff -ruN a/space/qa/browse.mjs b/space/qa/browse.mjs
  await settle(tour);
  await tour.click("#tourBtn");
  await tour.click('#tourList button[data-tour="adoption"]');
-@@ -253,7 +423,7 @@
+ await tour.waitForFunction(() => {
+   const el = document.querySelector("#tCaption");
+-  return el && /Connection:/.test(el.textContent) && /Adoption:/.test(el.textContent);
++  return el && /Connection:/.test(el.textContent) && /Editorial:/.test(el.textContent) && /not proof an entity uses XRP/.test(el.textContent);
+ });
+ const cap1 = await tour.locator("#tCaption").innerText();
+-check("adoption tour caption", /Connection:/.test(cap1) && /Adoption:/.test(cap1), cap1.slice(0, 180));
++check("editorial tour caption", /Connection:/.test(cap1) && /Editorial:/.test(cap1) && /not proof an entity uses XRP/.test(cap1), cap1.slice(0, 220));
+ await tour.click("#tNext");
+ await tour.waitForFunction((prev) => document.querySelector("#tCaption").textContent !== prev, cap1);
+ const cap2 = await tour.locator("#tCaption").innerText();
+@@ -253,12 +441,12 @@
  
  const phoneTourCtx = await browser.newContext(devices["iPhone 13"]);
  const phoneTour = await phoneTourCtx.newPage();
@@ -631,7 +980,14 @@ diff -ruN a/space/qa/browse.mjs b/space/qa/browse.mjs
  await settle(phoneTour);
  await phoneTour.click("#tourBtn");
  await phoneTour.click('#tourList button[data-tour="adoption"]');
-@@ -276,7 +446,7 @@
+-await phoneTour.waitForFunction(() => /Connection:/.test(document.querySelector("#tCaption")?.textContent || "") && /Adoption:/.test(document.querySelector("#tCaption")?.textContent || ""));
+-check("phone tour caption", /Adoption:/.test(await phoneTour.locator("#tCaption").innerText()));
++await phoneTour.waitForFunction(() => /Connection:/.test(document.querySelector("#tCaption")?.textContent || "") && /Editorial:/.test(document.querySelector("#tCaption")?.textContent || "") && /not proof an entity uses XRP/.test(document.querySelector("#tCaption")?.textContent || ""));
++check("phone editorial tour caption", /Editorial:/.test(await phoneTour.locator("#tCaption").innerText()));
+ await phoneTour.screenshot({ path: `${out}/phone-tour.png` });
+ await phoneTour.click("#tNext");
+ await phoneTour.click("#tStop");
+@@ -276,7 +464,7 @@
  const sbucket = { errors: [], warnings: [], failed: [] };
  attach(sp, sbucket);
  const t1 = Date.now();
@@ -640,7 +996,7 @@ diff -ruN a/space/qa/browse.mjs b/space/qa/browse.mjs
  await settle(sp);
  const sboot = Date.now() - t1;
  const sinfo = await readPreview(sp);
-@@ -295,11 +465,12 @@
+@@ -295,11 +483,12 @@
  const np = await nctx.newPage();
  const nbucket = { errors: [], warnings: [], failed: [] };
  attach(np, nbucket);
@@ -655,7 +1011,7 @@ diff -ruN a/space/qa/browse.mjs b/space/qa/browse.mjs
  const hubs = await np.locator("#fallbackList button").count();
  check("fallback lists entities before search", hubs > 0, String(hubs));
  await np.locator("#fallbackList button").first().click({ force: true });
-@@ -320,8 +491,8 @@
+@@ -320,8 +509,8 @@
  const home = await chromium.launch({ executablePath: chrome, headless: true });
  const hctx = await home.newContext();
  const hp = await hctx.newPage();
@@ -979,7 +1335,7 @@ diff -ruN a/space/qa/source.test.mjs b/space/qa/source.test.mjs
 +});
 diff -ruN a/space/qa/static.test.mjs b/space/qa/static.test.mjs
 --- a/space/qa/static.test.mjs	2026-11-11 16:02:35.921286940 +0000
-+++ b/space/qa/static.test.mjs	2026-11-11 16:19:45.861482911 +0000
++++ b/space/qa/static.test.mjs	2026-11-11 16:46:10.101737029 +0000
 @@ -1,5 +1,5 @@
  import assert from "node:assert/strict";
 -import { readFileSync } from "node:fs";
@@ -1012,8 +1368,24 @@ diff -ruN a/space/qa/static.test.mjs b/space/qa/static.test.mjs
    assert.match(app, /cache:\s*"no-cache"/);
    assert.match(html, /id="homeBtn"/);
    assert.match(html, /id="pauseBtn"/);
-@@ -31,8 +35,10 @@
+@@ -29,10 +33,26 @@
+   assert.equal(css.includes("backdrop-filter"), false);
+   assert.match(app, /WebGL/);
    assert.match(html, /not private/);
++  assert.match(html, /Editorial: supports thesis/);
++  assert.match(html, /Editorial: counters thesis/);
++  assert.match(html, /Not about adoption/);
++  assert.match(graph, /Editorial: supports adoption thesis/);
++  assert.match(graph, /Editorial: counters adoption thesis/);
++  assert.match(app, /No source stored/);
++  assert.match(app, /research summary is unverified/);
++  assert.match(app, /not a live quote/);
++  assert.match(app, /Graph file dated/);
++  assert.match(app, /not fact-audited the whole graph/);
++  assert.match(app, /Graph file dated/);
++  const sideBlock = graph.match(/SIDE_TEXT = \{[\s\S]*?\};/);
++  assert.ok(sideBlock);
++  assert.equal(/adopted/i.test(sideBlock[0]), false);
  });
  
 -test("production entry files are not the preview", () => {

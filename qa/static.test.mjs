@@ -33,6 +33,20 @@ test("page reads the shared public graph and has the requested controls", () => 
   assert.equal(css.includes("backdrop-filter"), false);
   assert.match(app, /WebGL/);
   assert.match(html, /not private/);
+  assert.match(html, /Editorial: supports thesis/);
+  assert.match(html, /Editorial: counters thesis/);
+  assert.match(html, /Not about adoption/);
+  assert.match(graph, /Editorial: supports adoption thesis/);
+  assert.match(graph, /Editorial: counters adoption thesis/);
+  assert.match(app, /No source stored/);
+  assert.match(app, /research summary is unverified/);
+  assert.match(app, /not a live quote/);
+  assert.match(app, /Graph file dated/);
+  assert.match(app, /not fact-audited the whole graph/);
+  assert.match(app, /Graph file dated/);
+  const sideBlock = graph.match(/SIDE_TEXT = \{[\s\S]*?\};/);
+  assert.ok(sideBlock);
+  assert.equal(/adopted/i.test(sideBlock[0]), false);
 });
 
 test("production entry files are not the preview when a parent site exists", () => {

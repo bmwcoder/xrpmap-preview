@@ -1,5 +1,5 @@
 import {
-  CENTER_IDS, GRADE_TEXT, GRADES, SIDE_HINT, SIDE_TEXT, SIDES,
+  CENTER_IDS, EDITORIAL_CAVEAT, GRADE_CAVEAT, GRADE_TEXT, GRADES, SIDE_HINT, SIDE_TEXT, SIDES,
   adoptionTally, applyFilters, createModel, defaultFilters, edgesOf,
   escapeHtml, formatUpdated, hostOf, latestEdges, safeUrl, searchNodes,
   shellAround, toggleGrade, toggleSide, toursFor, validateGraph,
@@ -9,7 +9,7 @@ import { graphCandidates } from "./source.js";
 
 const CACHE_NAME = "xrpmap-space-graph-v1";
 const CACHE_REQ = new Request(new URL("./graph-cache.json", document.baseURI));
-const CODE = "space-preview-4";
+const CODE = "space-preview-5";
 
 const $ = (sel, root = document) => root.querySelector(sel);
 const $$ = (sel, root = document) => [...root.querySelectorAll(sel)];
@@ -161,7 +161,7 @@ function countsText() {
 function paintCounts() {
   const m = state.model;
   $("#counts").textContent = countsText();
-  $("#updated").textContent = `Graph updated ${formatUpdated(m.meta.updated)}`;
+  $("#updated").textContent = `Graph file dated ${formatUpdated(m.meta.updated)}`;
   $("#updated").dateTime = m.meta.updated;
   $("#updated").title = m.meta.updated;
   const code = $("#code");
@@ -268,19 +268,24 @@ function renderPanel() {
     if (!groups.has(other.type)) groups.set(other.type, []);
     groups.get(other.type).push([edge, other]);
   }
-  const sources = node.sources.map(sourceLink).join("");
+  const hrefs = (node.sources || []).map((item) => safeUrl(item)).filter(Boolean);
+  const recordDate = node.added ? ` Record date ${formatUpdated(node.added)}.` : "";
   const body = $("#pBody");
   body.innerHTML = `
     <p class="kicker">${escapeHtml(node.type)} · ${escapeHtml(sector)}</p>
     <h2 id="pTitle">${escapeHtml(node.label)}</h2>
     ${node.handle ? `<p class="handle">${escapeHtml(node.handle)}</p>` : ""}
-    <p class="meta">${gradeMark(node.grade)} · ${all.length.toLocaleString("en-US")} connections${node.added ? ` · added ${escapeHtml(formatUpdated(node.added))}` : ""}</p>
-    ${node.why ? `<p class="why"><b>Why it is here.</b> ${escapeHtml(node.why)}</p>` : ""}
-    ${node.summary ? `<p class="sum">${escapeHtml(node.summary)}</p>` : ""}
-    <div class="srcs"><b>Entity sources</b> ${sources || '<span class="src none">None stored</span>'}</div>
+    <p class="meta">${gradeMark(node.grade)} · ${all.length.toLocaleString("en-US")} connections${recordDate ? ` ·${escapeHtml(recordDate)}` : ""}</p>
+    <p class="fine">${escapeHtml(GRADE_CAVEAT)} This preview has not fact-audited the whole graph.</p>
+    ${node.why ? `<p class="why"><b>Research note.</b> ${escapeHtml(node.why)}</p>` : ""}
+    ${node.summary ? `<p class="sum"><b>Research summary.</b> It may contain dated figures; it is not a live quote.${escapeHtml(recordDate)} ${escapeHtml(node.summary)}</p>` : ""}
+    ${hrefs.length
+      ? `<div class="srcs"><b>Entity sources</b> ${hrefs.map(sourceLink).join("")}</div>`
+      : `<p class="unsourced"><b>No source stored.</b> The research summary is unverified.</p>`}
     <div class="split">
-      <p><b>Connections</b> are sourced links between two entities. A connection is not adoption, a partnership, or an accusation.</p>
-      <p><b>Adoption</b> is a separate mark on each connection: ${tally.supports} support it, ${tally.contradicts} contradict it, ${tally.neutral} are not about adoption.</p>
+      <p><b>Connections</b> keep the raw label from the graph. A connection is not adoption, a partnership, or an accusation.</p>
+      <p class="caveat">${escapeHtml(EDITORIAL_CAVEAT)}</p>
+      <p><b>${escapeHtml(SIDE_TEXT.supports)}</b> ${tally.supports.toLocaleString("en-US")}. <b>${escapeHtml(SIDE_TEXT.contradicts)}</b> ${tally.contradicts.toLocaleString("en-US")}. <b>${escapeHtml(SIDE_TEXT.neutral)}</b> ${tally.neutral.toLocaleString("en-US")}.</p>
       <p>Around this entity, space shows only its real connections, moved nearby so the names can be read. Nothing is added. Home puts every entity back in the galaxy.</p>
     </div>
     ${[...groups.entries()].map(([type, rows]) => `
@@ -295,7 +300,7 @@ function renderPanel() {
         ${rows.length > 6 ? `<button type="button" class="text more-btn">Show ${rows.length - 6} more</button>` : ""}
       </details>`).join("")}
     ${all.length ? "" : '<p class="sum">No connections are stored for this entity.</p>'}
-    <p class="fine">Grades describe the source. The adoption mark describes the XRP / Ripple rails question. Read the linked source.</p>`;
+    <p class="fine">Raw connection labels, sides, grades, and source links are shown as stored. Nothing here reclassifies them.</p>`;
   body.scrollTop = 0;
 }
 

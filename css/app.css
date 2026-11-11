@@ -92,6 +92,7 @@ a { color: #c9dbff; }
 .srcs { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin: 8px 0 12px; }
 .src { border: 1px solid var(--line); border-radius: 999px; padding: 3px 8px; text-decoration: none; }
 .src.none { color: var(--muted); }
+.unsourced { color: var(--warn); margin: 8px 0; }
 .g { display: inline-grid; place-items: center; min-width: 1.3em; border-radius: 4px; font-size: 12px; padding: 0 4px; }
 .gA { background: #1f6b45; } .gB { background: #7a5a16; } .gC { background: #3d4658; } .gX { background: #7a2e2e; } .gU { background: #3d4658; }
 .side { font-size: 13px; }

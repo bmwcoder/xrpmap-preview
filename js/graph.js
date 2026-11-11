@@ -9,22 +9,26 @@ export const SIDES = ["supports", "neutral", "contradicts"];
 export const CENTER_IDS = ["xrp", "ripple", "xrpl"];
 
 export const GRADE_TEXT = {
-  A: "Primary or official source",
-  B: "Reputable reporting",
-  C: "Unverified claim",
-  X: "Checked and found false",
+  A: "Stored grade A · primary or official source",
+  B: "Stored grade B · reputable reporting",
+  C: "Stored grade C · unverified claim",
+  X: "Stored grade X · checked and found false",
 };
 
+export const GRADE_CAVEAT = "A grade is the map’s stored classification of the source, not proof the whole description was verified.";
+
+export const EDITORIAL_CAVEAT = "These are editorial assessments from the research map, not proof an entity uses XRP. Read the connection and its source.";
+
 export const SIDE_TEXT = {
-  supports: "Adoption: supports",
-  neutral: "Adoption: not about adoption",
-  contradicts: "Adoption: contradicts",
+  supports: "Editorial: supports adoption thesis",
+  neutral: "Not about adoption",
+  contradicts: "Editorial: counters adoption thesis",
 };
 
 export const SIDE_HINT = {
-  supports: "This connection is also evidence that supports XRP or Ripple payment-rail adoption.",
-  neutral: "This is a connection only. It does not say whether adoption is happening.",
-  contradicts: "This connection is evidence against XRP or Ripple payment-rail adoption.",
+  supports: "Editorial assessment that this connection fits an adoption thesis. Not proof the entity uses XRP.",
+  neutral: "The research map does not treat this connection as about adoption.",
+  contradicts: "Editorial assessment that this connection counters an adoption thesis. Not proof of non-use.",
 };
 
 const TYPE_SECTOR = {
@@ -514,7 +518,7 @@ function edgeStep(model, edge, focusId) {
   const B = model.nodes[edge.b];
   return {
     title: `${A.label} → ${B.label}`,
-    caption: `${A.label} → ${B.label}. Connection: ${edge.label}. Source grade ${edge.grade} (${GRADE_TEXT[edge.grade]}). ${SIDE_TEXT[edge.side]}.`,
+    caption: `${A.label} → ${B.label}. Connection: ${edge.label}. Source grade ${edge.grade} (${GRADE_TEXT[edge.grade]}). ${GRADE_CAVEAT} ${SIDE_TEXT[edge.side]}. ${EDITORIAL_CAVEAT}`,
     source: edge.source,
     focus: focus === undefined ? edge.a : focus,
     path: [{ a: edge.a, b: edge.b }],
@@ -528,10 +532,12 @@ function nodeStep(model, id) {
   const node = model.nodes[i];
   const text = (node.why || node.summary || "").replace(/\s+/g, " ").trim();
   const clip = text.length > 280 ? `${text.slice(0, 277)}…` : text;
+  const dated = node.added ? ` Record date ${node.added}.` : "";
+  const storedSource = (node.sources || []).some((item) => safeUrl(item));
   return {
     title: node.label,
     caption: clip
-      ? `${node.label}. Source grade ${node.grade || "—"} (${GRADE_TEXT[node.grade] || "not graded"}). ${clip}`
+      ? `${node.label}. Source grade ${node.grade || "—"} (${GRADE_TEXT[node.grade] || "not graded"}). ${GRADE_CAVEAT} Research summary. It may contain dated figures; it is not a live quote.${dated} ${clip}${storedSource ? "" : " No source stored. The research summary is unverified."}`
       : `${node.label}. Source grade ${node.grade || "—"}. No summary is stored on this entity.`,
     source: (node.sources || []).find((s) => safeUrl(s)) || "",
     focus: i,
@@ -568,8 +574,8 @@ function adoptionTour(model) {
   if (picked.length < 2) return null;
   return {
     id: "adoption",
-    title: "Connection or adoption?",
-    blurb: "Three current links, when the graph has them: one that supports adoption, one that does not address it, and one that contradicts it.",
+    title: "Editorial marks",
+    blurb: "Three stored marks, when the file has them: editorial support for an adoption thesis, not about adoption, and an editorial counter. Not proof an entity uses XRP.",
     steps: picked,
   };
 }

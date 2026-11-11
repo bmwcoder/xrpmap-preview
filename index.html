@@ -60,9 +60,9 @@
   <button type="button" data-grade="C" aria-pressed="false">C claim</button>
   <button type="button" data-grade="X" aria-pressed="false">X false</button>
   <span class="sep" aria-hidden="true"></span>
-  <button type="button" data-side="supports" aria-pressed="false">Supports adoption</button>
+  <button type="button" data-side="supports" aria-pressed="false">Editorial: supports thesis</button>
   <button type="button" data-side="neutral" aria-pressed="false">Not about adoption</button>
-  <button type="button" data-side="contradicts" aria-pressed="false">Contradicts adoption</button>
+  <button type="button" data-side="contradicts" aria-pressed="false">Editorial: counters thesis</button>
 </nav>
 
 <div id="banner" class="banner" role="status" hidden></div>
@@ -96,7 +96,7 @@
 
 <footer id="foot">
   <p id="counts" aria-live="polite"></p>
-  <p><time id="updated"></time> · <span id="dataFrom"></span> · code <span id="code">space-preview-4</span> · <button type="button" id="reloadBtn">Check for a newer graph</button></p>
+  <p><time id="updated"></time> · <span id="dataFrom"></span> · code <span id="code">space-preview-5</span> · <button type="button" id="reloadBtn">Check for a newer graph</button></p>
   <p id="soft" class="legal" hidden></p>
   <p class="legal">Not investment advice. A line is a connection, not adoption. The author holds XRP. <a href="https://xrpmap.org/">Current map</a>. Unlisted preview, not private.</p>
   <details id="latest">
@@ -110,8 +110,9 @@
     <button type="button" class="x" data-close aria-label="Close help">Close</button>
     <h2 id="helpTitle">How to read this preview</h2>
     <p><b>Connections</b> are lines. Each line means a public source ties two entities in the way the label says. Size is how many connections an entity has. A connection is not a partnership, control, or wrongdoing unless the label and the source say so.</p>
-    <p><b>Adoption</b> is a separate mark on a connection: supports XRP or Ripple payment-rail adoption, is not about that question, or contradicts it. Both directions are drawn. Filtering to “supports adoption” hides the rest; it does not turn those connections into adoption.</p>
-    <p><b>Grades</b> rate the source, not the person. A is a primary or official record. B is reputable reporting. C is an unverified claim. X was checked and found false.</p>
+    <p><b>Editorial marks</b> are the graph’s stored side field. The controls read “Editorial: supports thesis”, “Not about adoption”, and “Editorial: counters thesis”. These are editorial assessments from the research map, not proof an entity uses XRP. Read the connection and its source. Filtering hides other lines. It does not turn a connection into adoption.</p>
+    <p><b>Grades</b> are the map’s stored classification of a source, not proof the whole description was verified. A is a primary or official source. B is reputable reporting. C is an unverified claim. X was checked and found false. Grade C does not replace a missing source.</p>
+    <p><b>Research summaries</b> may contain dated figures. They are not live quotes. The record date is shown beside the summary. The time in the footer is the graph file’s date, not a fact audit. This preview has not fact-audited the whole graph.</p>
     <p>The view opens on <b>key connections</b>, the smaller set marked in the public graph. “All connections” draws every link in the file. Home clears a selection and returns to key connections.</p>
     <p>Drag to orbit, scroll or pinch to zoom, tap a point or search to inspect sources. Arrow keys orbit when the galaxy is focused. Slash focuses search. Escape closes this dialog, a tour, then the details.</p>
     <p>Pause motion stops the slow orbit, the star shimmer, and the fly-to glide. Reduced-motion settings start paused. If WebGL is missing, search and the written record stay available.</p>

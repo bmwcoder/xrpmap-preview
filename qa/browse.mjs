@@ -311,7 +311,7 @@ async function runProfile(browser, name, contextOptions, path) {
   check(`${name} selected label leaders`, selectedAnchors.problems.length === 0, selectedAnchors.problems.slice(0, 4).join("; ") || `${selectedAnchors.lines} leaders`);
   check(`${name} selected name visible`, selectedAudit.labels.some((text) => /^XRP\b/.test(text)), selectedAudit.labels.join(" | ").slice(0, 180));
   check(`${name} selected XRP`, shot.title === "XRP", shot.title);
-  check(`${name} grade and adoption copy`, /Primary or official source/.test(shot.text) && /Connections/.test(shot.text) && /Adoption/.test(shot.text), shot.text.slice(0, 180));
+  check(`${name} grade and editorial copy`, /primary or official source/i.test(shot.text) && /Connections/.test(shot.text) && /Editorial: supports adoption thesis/.test(shot.text) && /Editorial: counters adoption thesis/.test(shot.text) && /Not about adoption/.test(shot.text) && /not proof an entity uses XRP/.test(shot.text) && /not a live quote/.test(shot.text) && /Research summary/.test(shot.text) && /Record date/.test(shot.text), shot.text.slice(0, 280));
   check(`${name} source link`, /^https:\/\//.test(shot.href || ""), shot.href || "");
   if (narrow) check(`${name} sheet leaves the galaxy visible`, view.sheet / view.innerHeight < 0.42, `${Math.round(view.sheet)}/${view.innerHeight}`);
   await page.screenshot({ path: `${out}/${path}-selected.png` });
@@ -336,6 +336,24 @@ async function runProfile(browser, name, contextOptions, path) {
   await page.waitForSelector("#pBody .srcs a");
   check(`${name} evidence control shows sources`, (await page.locator("#pBody .srcs a").count()) >= 1);
   await page.screenshot({ path: `${out}/${path}-evidence.png` });
+  if (name === "desktop") {
+    const bare = await page.evaluate(() => {
+      const model = window.__spacePreview.engine.s;
+      const node = model.nodes.find((item) => !(item.sources || []).some((src) => /^https?:\/\//.test(src)));
+      return node ? node.label : "";
+    });
+    check("unsourced entity exists in this file", bare.length > 0, bare || "every entity has an http source");
+    if (bare) {
+      await page.fill("#q", bare);
+      await page.waitForSelector("#results button");
+      await page.keyboard.press("Enter");
+      await page.waitForSelector("#panel:not([hidden]) .unsourced");
+      const unsourced = await page.locator("#panel .unsourced").innerText();
+      check("no source stored and unverified summary", /No source stored/.test(unsourced) && /unverified/.test(unsourced), unsourced.slice(0, 180));
+      await page.screenshot({ path: `${out}/desktop-unsourced.png` });
+      await page.click("#homeBtn");
+    }
+  }
   await page.click("#homeBtn");
   await page.waitForTimeout(400);
   check(`${name} home clears selection`, (await page.locator("#panel").getAttribute("hidden")) !== null);
@@ -398,10 +416,10 @@ await tour.click("#tourBtn");
 await tour.click('#tourList button[data-tour="adoption"]');
 await tour.waitForFunction(() => {
   const el = document.querySelector("#tCaption");
-  return el && /Connection:/.test(el.textContent) && /Adoption:/.test(el.textContent);
+  return el && /Connection:/.test(el.textContent) && /Editorial:/.test(el.textContent) && /not proof an entity uses XRP/.test(el.textContent);
 });
 const cap1 = await tour.locator("#tCaption").innerText();
-check("adoption tour caption", /Connection:/.test(cap1) && /Adoption:/.test(cap1), cap1.slice(0, 180));
+check("editorial tour caption", /Connection:/.test(cap1) && /Editorial:/.test(cap1) && /not proof an entity uses XRP/.test(cap1), cap1.slice(0, 220));
 await tour.click("#tNext");
 await tour.waitForFunction((prev) => document.querySelector("#tCaption").textContent !== prev, cap1);
 const cap2 = await tour.locator("#tCaption").innerText();
@@ -427,8 +445,8 @@ await phoneTour.goto(`${base}${spacePath}`, { waitUntil: "domcontentloaded" });
 await settle(phoneTour);
 await phoneTour.click("#tourBtn");
 await phoneTour.click('#tourList button[data-tour="adoption"]');
-await phoneTour.waitForFunction(() => /Connection:/.test(document.querySelector("#tCaption")?.textContent || "") && /Adoption:/.test(document.querySelector("#tCaption")?.textContent || ""));
-check("phone tour caption", /Adoption:/.test(await phoneTour.locator("#tCaption").innerText()));
+await phoneTour.waitForFunction(() => /Connection:/.test(document.querySelector("#tCaption")?.textContent || "") && /Editorial:/.test(document.querySelector("#tCaption")?.textContent || "") && /not proof an entity uses XRP/.test(document.querySelector("#tCaption")?.textContent || ""));
+check("phone editorial tour caption", /Editorial:/.test(await phoneTour.locator("#tCaption").innerText()));
 await phoneTour.screenshot({ path: `${out}/phone-tour.png` });
 await phoneTour.click("#tNext");
 await phoneTour.click("#tStop");
