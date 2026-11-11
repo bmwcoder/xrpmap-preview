@@ -135,6 +135,9 @@ body:has(#panel:not([hidden])) #zoom { right: min(448px, calc(100vw - 54px)); }
 #latest button { color: #c9dbff; }
 
 .pop { position: fixed; z-index: 9; top: calc(58px + var(--sa-t)); right: 12px; width: min(360px, calc(100vw - 24px)); background: var(--panel-2); border: 1px solid var(--line); border-radius: 14px; padding: 12px; }
+/* The tour list sits in the same corner as the tour card, so opening a tour
+   does not uncover a different part of the graph. */
+#tourPop { top: auto; right: auto; left: 12px; bottom: calc(var(--foot, 84px) + 12px + var(--sa-b)); width: min(320px, calc(100vw - 24px)); max-height: 28vh; overflow: auto; background: rgba(16, 23, 38, .78); }
 .pop h2 { margin: 0 0 6px; font-size: 16px; }
 .pop p { margin: 0 0 8px; color: var(--muted); }
 #tourList { display: grid; gap: 6px; }
@@ -167,7 +170,7 @@ body:has(#panel:not([hidden])) #zoom { right: min(448px, calc(100vw - 54px)); }
   body:has(#panel:not([hidden])) #zoom,
   body:has(#fallback:not([hidden])) #zoom { display: none; }
   body.keyboard #foot, body.keyboard #zoom, body.keyboard #hint { display: none; }
-  #tour { width: min(300px, calc(100vw - 24px)); max-height: 24dvh; }
+  #tour, #tourPop { width: min(300px, calc(100vw - 24px)); max-height: 24dvh; }
   #foot { font-size: 12px; }
   #foot .legal, #latest { display: none; }
 }

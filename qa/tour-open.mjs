@@ -1,6 +1,7 @@
 /**
- * Opening flight only. Normal motion, Pause is never pressed.
- * Samples the camera before Start and on every animation frame of the first leg.
+ * Opening flight. Normal motion, Pause is never pressed.
+ * Compares the rendered framebuffer, projected nodes, and labels
+ * on the frame before Start with the frames just after it.
  *   node qa/tour-open.mjs http://127.0.0.1:8766
  */
 import { mkdirSync } from "node:fs";
@@ -12,6 +13,7 @@ const out = process.env.SHOTS || "/tmp/tour-open";
 mkdirSync(out, { recursive: true });
 
 const dist = (a, b) => Math.hypot(a[0] - b[0], a[1] - b[1], a[2] - b[2]);
+const screenDist = (a, b) => Math.hypot(a.x - b.x, a.y - b.y);
 
 const browser = await chromium.launch({
   executablePath: chromeBin,
@@ -27,8 +29,9 @@ const context = await browser.newContext({
 const page = await context.newPage();
 await page.goto(`${base}/`, { waitUntil: "domcontentloaded" });
 await page.waitForFunction(() => window.__spacePreview && window.__spacePreview.ready, null, { timeout: 30000 });
-await page.waitForTimeout(3500);
+await page.waitForTimeout(2000);
 const startState = await page.evaluate(() => ({
+  code: document.querySelector("#code").textContent,
   pause: document.querySelector("#pauseBtn").textContent,
   pressed: document.querySelector("#pauseBtn").getAttribute("aria-pressed"),
   reduced: matchMedia("(prefers-reduced-motion: reduce)").matches,
@@ -40,89 +43,149 @@ await page.evaluate(() => {
   const frames = [];
   window.__openFrames = frames;
   const prev = space.opts.onFrame;
+  const watch = ["xrp", "ripple", "xrpl", "rlusd"].map((id) => ({ id, i: space.s.idx.get(id) })).filter((item) => item.i !== undefined);
+  const gl = space.renderer.getContext();
+  const gridW = 96;
+  const gridH = 60;
   space.opts.onFrame = () => {
     if (prev) prev();
-    frames.push({
-      cam: space.camera.position.toArray(),
-      target: space.controls.target.toArray(),
-      step: document.querySelector("#tCount") ? document.querySelector("#tCount").textContent : "",
-      ms: performance.now(),
+    const cam = space.camera;
+    const pixels = new Uint8Array(gridW * gridH * 4);
+    gl.readPixels(
+      Math.round((space.w - gridW) / 2),
+      Math.round((space.h - gridH) / 2),
+      gridW,
+      gridH,
+      gl.RGBA,
+      gl.UNSIGNED_BYTE,
+      pixels,
+    );
+    let lit = 0;
+    for (let i = 0; i < pixels.length; i += 16) lit += pixels[i] + pixels[i + 1] + pixels[i + 2];
+    const nodes = {};
+    for (const item of watch) {
+      const p = space.nodeVec(item.i).project(cam);
+      nodes[item.id] = { x: (p.x + 1) / 2 * space.w, y: (1 - p.y) / 2 * space.h };
+    }
+    let posSum = 0;
+    for (let i = 0; i < Math.min(space.nodePos.length, 90); i++) posSum += space.nodePos[i];
+    let shown = 0;
+    const vis = space.iState.array;
+    for (let i = 0; i < vis.length; i++) if (vis[i] >= 0) shown++;
+    const labels = [...document.querySelectorAll("#labels3d .lab")].filter((el) => (el.style.opacity || "1") !== "0").map((el) => {
+      const r = el.querySelector("span").getBoundingClientRect();
+      return { t: el.textContent.trim(), x: r.left, y: r.top };
     });
+    frames.push({
+      cam: cam.position.toArray(),
+      target: space.controls.target.toArray(),
+      fov: cam.fov,
+      zoom: cam.zoom,
+      aspect: cam.aspect,
+      wh: [space.w, space.h],
+      nodes,
+      posSum,
+      shown,
+      pixels,
+      lit,
+      labels,
+    });
+    if (frames.length > 240) frames.shift();
   };
 });
-await page.screenshot({ path: `${out}/overview.png` });
 await page.click("#tourBtn");
-await page.waitForTimeout(2500);
+await page.waitForTimeout(1500);
 await page.screenshot({ path: `${out}/menu.png` });
-const before = await page.evaluate(() => {
-  const space = window.__spacePreview.engine;
-  const labels = [...document.querySelectorAll("#labels3d .lab")]
-    .filter((el) => parseFloat(el.style.opacity || "1") > 0.5)
-    .map((el) => el.textContent.trim());
-  return {
-    cam: space.camera.position.toArray(),
-    target: space.controls.target.toArray(),
-    labels,
-    n: window.__openFrames.length,
-  };
-});
+const beforeIndex = await page.evaluate(() => window.__openFrames.length - 1);
 await page.click("#tourList button:nth-child(2)");
 await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))));
-const early = await page.evaluate((mark) => {
-  const frames = window.__openFrames;
-  const first = frames[mark] || frames[frames.length - 1];
-  const labels = [...document.querySelectorAll("#labels3d .lab")]
-    .filter((el) => parseFloat(el.style.opacity || "1") > 0.5)
-    .map((el) => el.textContent.trim());
-  return { first, mark, len: frames.length, step: document.querySelector("#tCount").textContent, labels };
-}, before.n);
-await page.screenshot({ path: `${out}/just-after-start.png` });
-await page.waitForTimeout(2000);
-await page.screenshot({ path: `${out}/open-2s.png` });
-await page.waitForTimeout(2000);
-await page.screenshot({ path: `${out}/open-4s.png` });
-await page.waitForTimeout(2200);
+await page.screenshot({ path: `${out}/just-after.png` });
+await page.waitForTimeout(1000);
+await page.screenshot({ path: `${out}/open-1s.png` });
+await page.waitForTimeout(4500);
 await page.screenshot({ path: `${out}/open-arrival.png` });
-const end = await page.evaluate((mark) => {
+const measured = await page.evaluate((beforeIndex) => {
   const frames = window.__openFrames;
-  const leg = [];
-  for (let i = Math.max(0, mark - 1); i < frames.length; i++) {
-    if (frames[i].step && frames[i].step !== "1 of 3" && leg.length) break;
-    leg.push(frames[i]);
-  }
+  const before = frames[beforeIndex];
+  const first = frames[beforeIndex + 1] || frames[frames.length - 1];
+  const later = frames[Math.min(frames.length - 1, beforeIndex + 12)];
+  const mad = (a, b) => {
+    let s = 0;
+    const n = Math.min(a.length, b.length);
+    let count = 0;
+    for (let i = 0; i < n; i += 4) {
+      s += Math.abs(a[i] - b[i]) + Math.abs(a[i + 1] - b[i + 1]) + Math.abs(a[i + 2] - b[i + 2]);
+      count += 3;
+    }
+    return s / count;
+  };
+  const leg = frames.slice(beforeIndex);
   return {
+    code: document.querySelector("#code").textContent,
     pause: document.querySelector("#pauseBtn").textContent,
     reduced: matchMedia("(prefers-reduced-motion: reduce)").matches,
     step: document.querySelector("#tCount").textContent,
-    leg: leg.filter((_, i) => i % 8 === 0).map((frame) => ({
-      cam: frame.cam.map((n) => Math.round(n)),
-      target: frame.target.map((n) => Math.round(n)),
-    })),
+    before: { cam: before.cam, target: before.target, fov: before.fov, zoom: before.zoom, aspect: before.aspect, wh: before.wh, nodes: before.nodes, posSum: before.posSum, shown: before.shown, lit: before.lit, labels: before.labels },
+    first: { cam: first.cam, target: first.target, fov: first.fov, zoom: first.zoom, aspect: first.aspect, wh: first.wh, nodes: first.nodes, posSum: first.posSum, shown: first.shown, lit: first.lit, labels: first.labels },
+    laterCam: later.cam,
+    pixelMadFirst: mad(before.pixels, first.pixels),
+    pixelMadLater: mad(before.pixels, later.pixels),
     legCount: leg.length,
   };
-}, before.n);
-const firstCam = early.first.cam;
-const firstTarget = early.first.target;
-const firstMove = dist(before.cam, firstCam);
-const firstTargetMove = dist(before.target, firstTarget);
-const route = dist(before.cam, end.leg.at(-1) ? end.leg.at(-1).cam : firstCam);
-console.log("BEFORE", before.cam.map((n) => Math.round(n)), "target", before.target.map((n) => Math.round(n)));
-console.log("FIRST_FRAME", firstCam.map((n) => Math.round(n)), "target", firstTarget.map((n) => Math.round(n)));
-const kept = before.labels.filter((name) => early.labels.includes(name));
-console.log("LABELS_BEFORE", JSON.stringify(before.labels));
-console.log("LABELS_FIRST", JSON.stringify(early.labels));
-console.log("FIRST_DELTAS", JSON.stringify({ cam: Math.round(firstMove), target: Math.round(firstTargetMove), route: Math.round(route), frames: end.legCount, labelsKept: kept.length, labelsBefore: before.labels.length }));
-console.log("LEG", JSON.stringify(end.leg));
-console.log("STATE", JSON.stringify({ pause: end.pause, reduced: end.reduced, step: end.step }));
-const tiny = route > 200 && firstMove < route * 0.08 && firstTargetMove < route * 0.08;
-const labelsHeld = before.labels.length >= 4 && kept.length >= Math.ceil(before.labels.length * 0.7);
-console.log(tiny ? "PASS opening first frame stays on the overview pose" : "FAIL opening first frame jumped");
-console.log(labelsHeld ? "PASS opening first frame keeps the overview names" : "FAIL opening first frame replaced the overview names");
-console.log(end.pause === "Pause" && end.reduced === false ? "PASS pause was not used and reduced motion is off" : "FAIL motion state");
-await page.waitForTimeout(1500);
+}, beforeIndex);
+const firstMove = dist(measured.before.cam, measured.first.cam);
+const firstTargetMove = dist(measured.before.target, measured.first.target);
+const route = dist(measured.before.cam, measured.laterCam);
+const nodeJumps = Object.keys(measured.before.nodes).map((id) => ({
+  id,
+  px: +screenDist(measured.before.nodes[id], measured.first.nodes[id]).toFixed(2),
+}));
+const kept = measured.before.labels.filter((label) => measured.first.labels.some((item) => item.t === label.t && Math.hypot(item.x - label.x, item.y - label.y) < 24));
+console.log("CODE", measured.code);
+console.log("BEFORE_CAM", measured.before.cam.map((n) => Math.round(n)), "target", measured.before.target.map((n) => Math.round(n)));
+console.log("FIRST_CAM", measured.first.cam.map((n) => Math.round(n)), "target", measured.first.target.map((n) => Math.round(n)));
+console.log("DELTAS", JSON.stringify({
+  cam: +firstMove.toFixed(2),
+  target: +firstTargetMove.toFixed(2),
+  route: Math.round(route),
+  pixelMadFirst: +measured.pixelMadFirst.toFixed(2),
+  pixelMadLater: +measured.pixelMadLater.toFixed(2),
+  lit: measured.before.lit,
+  posSum: [measured.before.posSum, measured.first.posSum],
+  shown: [measured.before.shown, measured.first.shown],
+  fov: [measured.before.fov, measured.first.fov],
+  zoom: [measured.before.zoom, measured.first.zoom],
+  wh: [measured.before.wh, measured.first.wh],
+  nodes: nodeJumps,
+  labelsKept: `${kept.length}/${measured.before.labels.length}`,
+}));
+console.log("LABELS_BEFORE", measured.before.labels.map((label) => label.t).join(" | "));
+console.log("LABELS_FIRST", measured.first.labels.map((label) => label.t).join(" | "));
+const samePicture = measured.before.posSum === measured.first.posSum
+  && measured.before.shown === measured.first.shown
+  && measured.before.fov === measured.first.fov
+  && measured.before.zoom === measured.first.zoom
+  && measured.before.wh.join() === measured.first.wh.join();
+const pixelsContinuous = measured.before.lit > 200
+  && measured.pixelMadLater > 4
+  && measured.pixelMadFirst < 4
+  && measured.pixelMadFirst < measured.pixelMadLater * 0.35;
+const nodesContinuous = nodeJumps.every((item) => item.px < 8);
+const labelsContinuous = kept.length === measured.before.labels.length && measured.before.labels.length >= 6;
+const cameraContinuous = route > 200 && firstMove < route * 0.08 && firstTargetMove < route * 0.08;
+const motionOk = measured.pause === "Pause" && measured.reduced === false && startState.motionOff === false;
+const stampOk = measured.code === "space-preview-9" && startState.code === "space-preview-9";
+console.log(stampOk ? "PASS code stamp space-preview-9" : "FAIL code stamp");
+console.log(samePicture ? "PASS world positions, visibility, fov, zoom, and canvas size stay put" : "FAIL scene or projection changed at Start");
+console.log(pixelsContinuous ? "PASS rendered framebuffer stays continuous across Start" : "FAIL rendered framebuffer jumped at Start");
+console.log(nodesContinuous ? "PASS projected nodes stay within 8px" : "FAIL projected nodes jumped");
+console.log(labelsContinuous ? "PASS overview labels stay on their first-frame positions" : "FAIL overview labels changed at Start");
+console.log(cameraContinuous ? "PASS camera and look target move a tiny fraction of the route" : "FAIL camera jumped");
+console.log(motionOk ? "PASS pause was not used and reduced motion is off" : "FAIL motion state");
+await page.waitForTimeout(400);
 const video = page.video();
 await context.close();
 if (video) console.log("VIDEO", await video.path());
 await browser.close();
-if (!tiny || !labelsHeld || end.pause !== "Pause" || end.reduced) process.exit(1);
+if (!stampOk || !samePicture || !pixelsContinuous || !nodesContinuous || !labelsContinuous || !cameraContinuous || !motionOk) process.exit(1);
 console.log("OPENING FLIGHT PASSED");
