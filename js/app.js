@@ -4,11 +4,12 @@ import {
   escapeHtml, formatUpdated, hostOf, latestEdges, safeUrl, searchNodes,
   shellAround, toggleGrade, toggleSide, toursFor, validateGraph,
 } from "./graph.js";
+import { settleLabelBoxes } from "./labels.js";
+import { graphCandidates } from "./source.js";
 
 const CACHE_NAME = "xrpmap-space-graph-v1";
 const CACHE_REQ = new Request(new URL("./graph-cache.json", document.baseURI));
-const CODE = "space-preview-2";
-const PUBLIC_GRAPH = "https://xrpmap.org/graph.json";
+const CODE = "space-preview-3";
 
 const $ = (sel, root = document) => root.querySelector(sel);
 const $$ = (sel, root = document) => [...root.querySelectorAll(sel)];
@@ -68,7 +69,7 @@ function placeChrome() {
 }
 
 async function fetchLive() {
-  const candidates = [new URL("../graph.json", document.baseURI).href, PUBLIC_GRAPH];
+  const candidates = graphCandidates(document.baseURI || location.href);
   const errors = [];
   for (const href of candidates) {
     try {
@@ -163,6 +164,8 @@ function paintCounts() {
   $("#updated").textContent = `Graph updated ${formatUpdated(m.meta.updated)}`;
   $("#updated").dateTime = m.meta.updated;
   $("#updated").title = m.meta.updated;
+  const code = $("#code");
+  if (code) code.textContent = CODE;
   const from = $("#dataFrom");
   if (from) {
     if (state.source === "cache") from.textContent = "Showing a copy saved in this browser.";
@@ -449,6 +452,73 @@ function labelSet() {
   return out;
 }
 
+function chromeObstacles() {
+  const boxes = [];
+  for (const sel of ["#top", "#filters", "#foot", "#zoom", "#panel", "#tour", "#banner", "#tourPop"]) {
+    const el = $(sel);
+    if (!el || el.hidden) continue;
+    const cs = getComputedStyle(el);
+    if (cs.display === "none" || cs.visibility === "hidden") continue;
+    const rect = el.getBoundingClientRect();
+    if (rect.width < 2 || rect.height < 2) continue;
+    boxes.push({
+      left: rect.left - 4,
+      top: rect.top - 4,
+      right: rect.right + 4,
+      bottom: rect.bottom + 4,
+    });
+  }
+  return boxes;
+}
+
+function labelPriority(el) {
+  if (el.classList.contains("sel")) return 100;
+  if (el.classList.contains("gold")) return 80;
+  if (el.classList.contains("tag")) return 70;
+  if (el.classList.contains("nb")) return 60;
+  if (el.classList.contains("sl")) return 10;
+  return 40;
+}
+
+function layoutLabels() {
+  const root = $("#labels3d");
+  if (!root) return;
+  const bounds = { left: 8, top: 8, right: innerWidth - 8, bottom: innerHeight - 8 };
+  const obstacles = chromeObstacles();
+  const items = [];
+  for (const el of root.querySelectorAll(".lab")) {
+    el.style.marginLeft = "0px";
+    el.style.marginTop = "0px";
+    const opacity = parseFloat(el.style.opacity || "1");
+    if (!Number.isFinite(opacity) || opacity < 0.75) {
+      el.style.opacity = "0";
+      continue;
+    }
+    const span = el.querySelector("span");
+    if (!span) continue;
+    const rect = span.getBoundingClientRect();
+    if (rect.width < 2 || rect.height < 2) continue;
+    items.push({
+      id: el,
+      priority: labelPriority(el),
+      left: rect.left,
+      top: rect.top,
+      right: rect.right,
+      bottom: rect.bottom,
+    });
+  }
+  for (const result of settleLabelBoxes(items, obstacles, bounds)) {
+    if (!result.show) {
+      result.id.style.opacity = "0";
+      continue;
+    }
+    if (result.dx || result.dy) {
+      result.id.style.marginLeft = `${result.dx}px`;
+      result.id.style.marginTop = `${result.dy}px`;
+    }
+  }
+}
+
 function webglInfo() {
   try {
     const canvas = document.createElement("canvas");
@@ -495,7 +565,10 @@ async function startSpace() {
     const { Space } = await import("./space-WZLWI5EC.js");
     const space = new Space($("#space"), $("#labels3d"), state.model, {
       onPick: (index) => select(index, "pick"),
-      onFrame: () => { preview.frame = (preview.frame || 0) + 1; },
+      onFrame: () => {
+        preview.frame = (preview.frame || 0) + 1;
+        layoutLabels();
+      },
       preserve: /shots/.test(location.search),
       software: info.software,
     });
@@ -604,8 +677,12 @@ function fitGalaxy(duration = 900) {
   const vLimit = rad / Math.sin(fov / 2);
   const hFov = 2 * Math.atan(Math.tan(fov / 2) * aspect);
   const hLimit = rad / Math.sin(hFov / 2);
-  const chrome = space.h > 0 ? Math.min(0.45, ((parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--top")) || 0) + (parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--foot")) || 0)) / space.h) : 0.2;
-  const dist = Math.min(7000, Math.max(700, Math.max(vLimit, hLimit) * (0.78 + chrome)));
+  const topH = $("#top")?.getBoundingClientRect().height || 0;
+  const filtersEl = $("#filters");
+  const filtersH = filtersEl && getComputedStyle(filtersEl).display !== "none" ? filtersEl.getBoundingClientRect().height : 0;
+  const footH = $("#foot")?.getBoundingClientRect().height || 0;
+  const chrome = space.h > 0 ? Math.min(0.55, (topH + filtersH + footH) / space.h) : 0.28;
+  const dist = Math.min(9000, Math.max(700, Math.max(vLimit, hLimit) * (1.08 + chrome * 0.45)));
   const eye = space.camera.position.clone().set(cx + dist * 0.2, cy - dist * 0.86, cz + dist * 0.38);
   const target = space.controls.target.clone().set(cx, cy, cz);
   return space.flyTo(eye, target, state.motionOff ? 1 : duration);

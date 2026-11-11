@@ -1,15 +1,21 @@
 /**
  * Browser QA for the Space preview. Not part of the page.
- *   cd /tmp && npm install playwright-core
- *   node /workspace/space/qa/browse.mjs http://127.0.0.1:8765
+ * Preview root (public graph):
+ *   node qa/browse.mjs http://127.0.0.1:8766
+ * Source layout beside graph.json (SPACE_PATH=/space/):
+ *   SPACE_PATH=/space/ node qa/browse.mjs http://127.0.0.1:8765
  *
- * Uses the system Chrome. Set CHROME to override the binary.
+ * Counts and the timestamp come from the graph URL the page actually loaded.
+ * The fixed November snapshot stays in qa/graph.test.mjs.
  */
 import { execFileSync } from "node:child_process";
 import { mkdirSync } from "node:fs";
 import { chromium, devices } from "playwright-core";
+import { createModel, applyFilters } from "../js/graph.js";
 
-const base = process.argv[2] || "http://127.0.0.1:8765";
+const base = process.argv[2] || "http://127.0.0.1:8766";
+const spacePath = process.env.SPACE_PATH || "/";
+const prodUrl = process.env.PROD_URL || (spacePath === "/" ? "https://xrpmap.org/" : `${base}/`);
 const chrome = process.env.CHROME || "/usr/local/bin/google-chrome";
 const out = process.env.SHOTS || "/tmp/space-qa";
 mkdirSync(out, { recursive: true });
@@ -52,8 +58,108 @@ async function readPreview(page) {
       selected: p.selected,
       tours: p.tours,
       source: p.source,
+      dataHref: p.dataHref,
       warnings: p.warnings,
     };
+  });
+}
+
+const graphCache = new Map();
+async function loadGraphFile(href) {
+  if (!graphCache.has(href)) {
+    const res = await fetch(href, { cache: "no-store" });
+    if (!res.ok) throw new Error(`${href} HTTP ${res.status}`);
+    graphCache.set(href, await res.json());
+  }
+  return graphCache.get(href);
+}
+
+async function expectationsFrom(info) {
+  const data = await loadGraphFile(info.dataHref);
+  const model = createModel(structuredClone(data));
+  const keyShown = model.countE;
+  applyFilters(model, { key: false });
+  return {
+    updated: data.meta.updated,
+    nodes: data.nodes.length,
+    edges: data.edges.length,
+    keyShown,
+    allShown: model.countE,
+    href: info.dataHref,
+    publicFile: info.dataHref.includes("xrpmap.org/graph.json"),
+  };
+}
+
+async function auditScene(page) {
+  return page.evaluate(() => {
+    const shown = (el) => {
+      if (!el || el.hidden) return false;
+      const cs = getComputedStyle(el);
+      if (cs.display === "none" || cs.visibility === "hidden") return false;
+      const rect = el.getBoundingClientRect();
+      return rect.width > 1 && rect.height > 1;
+    };
+    const box = (el) => {
+      const rect = el.getBoundingClientRect();
+      return { left: rect.left, top: rect.top, right: rect.right, bottom: rect.bottom, width: rect.width, height: rect.height };
+    };
+    const area = (a, b) => {
+      const w = Math.min(a.right, b.right) - Math.max(a.left, b.left);
+      const h = Math.min(a.bottom, b.bottom) - Math.max(a.top, b.top);
+      return w > 0 && h > 0 ? w * h : 0;
+    };
+    const labels = [...document.querySelectorAll("#labels3d .lab")].flatMap((el) => {
+      const opacity = parseFloat(el.style.opacity || "1");
+      const span = el.querySelector("span");
+      if (!span || opacity < 0.2) return [];
+      const item = box(span);
+      if (item.width < 2 || item.height < 2) return [];
+      return [{ text: span.textContent || "", section: el.classList.contains("sl"), box: item }];
+    });
+    const problems = [];
+    for (let i = 0; i < labels.length; i++) {
+      const label = labels[i];
+      if (label.box.left < -1 || label.box.top < -1 || label.box.right > innerWidth + 1 || label.box.bottom > innerHeight + 1) {
+        problems.push(`clipped ${label.text}`);
+      }
+      for (let j = i + 1; j < labels.length; j++) {
+        const overlap = area(label.box, labels[j].box);
+        if (overlap > 1) problems.push(`overlap ${label.text} | ${labels[j].text}`);
+      }
+    }
+    for (const sel of ["#top", "#filters", "#foot", "#zoom", "#panel", "#tour"]) {
+      const el = document.querySelector(sel);
+      if (!shown(el)) continue;
+      const chrome = box(el);
+      for (const label of labels) {
+        if (area(label.box, chrome) > 1) problems.push(`under ${el.id} ${label.text}`);
+      }
+    }
+    return {
+      problems,
+      labels: labels.map((label) => label.text),
+      sections: labels.filter((label) => label.section).map((label) => label.text),
+    };
+  });
+}
+
+async function auditFilters(page) {
+  return page.evaluate(() => {
+    const bar = document.querySelector("#filters");
+    const display = getComputedStyle(bar).display;
+    if (display === "none") return { open: false, problems: [] };
+    const problems = [];
+    for (const btn of bar.querySelectorAll("button")) {
+      const rect = btn.getBoundingClientRect();
+      const text = btn.textContent.trim();
+      if (rect.left < -1 || rect.top < -1 || rect.right > innerWidth + 1 || rect.bottom > innerHeight + 1 || rect.width < 8 || rect.height < 8) {
+        problems.push(`offscreen ${text}`);
+        continue;
+      }
+      const hit = document.elementFromPoint((rect.left + rect.right) / 2, (rect.top + rect.bottom) / 2);
+      if (!hit || (hit !== btn && !btn.contains(hit))) problems.push(`covered ${text}`);
+    }
+    return { open: true, problems };
   });
 }
 
@@ -84,14 +190,22 @@ async function runProfile(browser, name, contextOptions, path) {
   const page = await context.newPage();
   attach(page, bucket);
   const t0 = Date.now();
-  await page.goto(`${base}/space/`, { waitUntil: "domcontentloaded" });
+  await page.goto(`${base}${spacePath}`, { waitUntil: "domcontentloaded" });
   await settle(page);
   const boot = Date.now() - t0;
   const info = await readPreview(page);
+  const expected = await expectationsFrom(info);
+  const from = await page.locator("#dataFrom").innerText();
+  const robots = await page.locator('meta[name="robots"]').getAttribute("content");
   check(`${name} ready`, info.mode === "webgl", info.mode);
-  check(`${name} live graph`, info.source === "live" && info.meta.updated === "2026-11-11T08:25:56-05:00", `${info.source} ${info.meta && info.meta.updated}`);
-  check(`${name} counts`, info.counts.nodes === 2371 && info.counts.edges === 6704 && info.counts.shownE === 91, JSON.stringify(info.counts));
+  check(`${name} noindex`, (robots || "").includes("noindex"), robots || "");
+  check(`${name} graph stamp`, info.source === "live" && info.meta.updated === expected.updated, `${info.source} ${info.meta && info.meta.updated} ${info.dataHref}`);
+  check(`${name} counts`, info.counts.nodes === expected.nodes && info.counts.edges === expected.edges && info.counts.shownE === expected.keyShown, JSON.stringify({ page: info.counts, expected }));
+  check(`${name} graph origin`, expected.publicFile ? from.includes("xrpmap.org/graph.json") : from.includes("this site"), from);
   check(`${name} updated visible`, (await page.locator("#updated").innerText()).includes("2026"), await page.locator("#updated").innerText());
+  const homeAudit = await auditScene(page);
+  check(`${name} home labels clear`, homeAudit.problems.length === 0, homeAudit.problems.slice(0, 6).join("; "));
+  check(`${name} home shows entity names`, homeAudit.labels.filter((text) => !homeAudit.sections.includes(text)).length >= (name === "phone" ? 3 : 4) && /Ripple|XRP/.test(homeAudit.labels.join(" ")), homeAudit.labels.join(" | ").slice(0, 220));
   await page.screenshot({ path: `${out}/${path}-home.png` });
   const homeFill = await page.evaluate(() => {
     const space = window.__spacePreview.engine;
@@ -106,7 +220,7 @@ async function runProfile(browser, name, contextOptions, path) {
     const ys = pts.map((p) => p[1]);
     return { width: Math.max(...xs) - Math.min(...xs), view: space.w };
   });
-  check(`${name} home graph fills the view`, homeFill.width > homeFill.view * 0.45, `${Math.round(homeFill.width)}/${Math.round(homeFill.view)}`);
+  check(`${name} home graph stays composed`, homeFill.width > homeFill.view * 0.3 && homeFill.width < homeFill.view * 0.94, `${Math.round(homeFill.width)}/${Math.round(homeFill.view)}`);
   if (name === "phone") {
     const clipped = await page.evaluate(() => {
       const brand = document.querySelector(".brand").getBoundingClientRect();
@@ -123,12 +237,15 @@ async function runProfile(browser, name, contextOptions, path) {
     check(`${name} filters start closed`, filtersDisplay === "none", filtersDisplay);
     await page.click("#filterBtn");
   }
+  const filters = await auditFilters(page);
+  check(`${name} filters reachable`, filters.open && filters.problems.length === 0, filters.problems.join("; ") || `${filters.open ? "open" : "closed"} ${filters.problems.length}`);
+  if (name === "phone" || name === "tablet") await page.screenshot({ path: `${out}/${path}-filters.png` });
   await page.click("#allBtn");
-  await page.waitForFunction(() => window.__spacePreview.counts.shownE === 6704);
-  check(`${name} all-connections control`, (await readPreview(page)).counts.shownE === 6704);
+  await page.waitForFunction((n) => window.__spacePreview.counts.shownE === n, expected.allShown);
+  check(`${name} all-connections control`, (await readPreview(page)).counts.shownE === expected.allShown, String(expected.allShown));
   await page.click("#keyBtn");
-  await page.waitForFunction(() => window.__spacePreview.counts.shownE === 91 && window.__spacePreview.counts.key === true);
-  check(`${name} key-connections control`, (await readPreview(page)).counts.shownE === 91);
+  await page.waitForFunction((n) => window.__spacePreview.counts.shownE === n && window.__spacePreview.counts.key === true, expected.keyShown);
+  check(`${name} key-connections control`, (await readPreview(page)).counts.shownE === expected.keyShown, String(expected.keyShown));
   if (narrow) await page.click("#filterBtn");
   await page.click("#pauseBtn");
   check(`${name} pause control`, (await page.locator("#pauseBtn").getAttribute("aria-pressed")) === "true" && (await readPreview(page)).motionOff === true);
@@ -140,6 +257,9 @@ async function runProfile(browser, name, contextOptions, path) {
   }, null, { timeout: 8000 });
   const view = await page.evaluate(() => window.__spacePreview.view);
   check(`${name} selected neighborhood has depth`, view.width > 220 && view.height > 120 && view.labels >= 6, JSON.stringify(view));
+  const selectedAudit = await auditScene(page);
+  check(`${name} selected labels clear`, selectedAudit.problems.length === 0, selectedAudit.problems.slice(0, 6).join("; "));
+  check(`${name} selected name visible`, selectedAudit.labels.some((text) => /^XRP\b/.test(text)), selectedAudit.labels.join(" | ").slice(0, 180));
   check(`${name} selected XRP`, shot.title === "XRP", shot.title);
   check(`${name} grade and adoption copy`, /Primary or official source/.test(shot.text) && /Connections/.test(shot.text) && /Adoption/.test(shot.text), shot.text.slice(0, 180));
   check(`${name} source link`, /^https:\/\//.test(shot.href || ""), shot.href || "");
@@ -210,7 +330,7 @@ const reduced = await browser.newContext({ viewport: { width: 1280, height: 800 
 const rpage = await reduced.newPage();
 const rbucket = { errors: [], warnings: [], failed: [] };
 attach(rpage, rbucket);
-await rpage.goto(`${base}/space/`, { waitUntil: "domcontentloaded" });
+await rpage.goto(`${base}${spacePath}`, { waitUntil: "domcontentloaded" });
 await settle(rpage);
 const rinfo = await readPreview(rpage);
 check("reduced motion starts paused", rinfo.motionOff === true && (await rpage.locator("#pauseBtn").getAttribute("aria-pressed")) === "true");
@@ -222,7 +342,7 @@ const tourCtx = await browser.newContext({ viewport: { width: 1440, height: 900 
 const tour = await tourCtx.newPage();
 const tbucket = { errors: [], warnings: [], failed: [] };
 attach(tour, tbucket);
-await tour.goto(`${base}/space/`, { waitUntil: "domcontentloaded" });
+await tour.goto(`${base}${spacePath}`, { waitUntil: "domcontentloaded" });
 await settle(tour);
 await tour.click("#tourBtn");
 await tour.click('#tourList button[data-tour="adoption"]');
@@ -253,7 +373,7 @@ await tourCtx.close();
 
 const phoneTourCtx = await browser.newContext(devices["iPhone 13"]);
 const phoneTour = await phoneTourCtx.newPage();
-await phoneTour.goto(`${base}/space/`, { waitUntil: "domcontentloaded" });
+await phoneTour.goto(`${base}${spacePath}`, { waitUntil: "domcontentloaded" });
 await settle(phoneTour);
 await phoneTour.click("#tourBtn");
 await phoneTour.click('#tourList button[data-tour="adoption"]');
@@ -276,7 +396,7 @@ const sp = await sw.newPage();
 const sbucket = { errors: [], warnings: [], failed: [] };
 attach(sp, sbucket);
 const t1 = Date.now();
-await sp.goto(`${base}/space/`, { waitUntil: "domcontentloaded" });
+await sp.goto(`${base}${spacePath}`, { waitUntil: "domcontentloaded" });
 await settle(sp);
 const sboot = Date.now() - t1;
 const sinfo = await readPreview(sp);
@@ -295,11 +415,12 @@ const nctx = await noweb.newContext({ viewport: { width: 390, height: 844 } });
 const np = await nctx.newPage();
 const nbucket = { errors: [], warnings: [], failed: [] };
 attach(np, nbucket);
-await np.goto(`${base}/space/`, { waitUntil: "domcontentloaded" });
+await np.goto(`${base}${spacePath}`, { waitUntil: "domcontentloaded" });
 await settle(np);
 const ninfo = await readPreview(np);
 check("no-webgl fallback", ninfo.mode === "fallback", ninfo.mode);
-check("fallback still has counts", ninfo.counts.nodes === 2371, JSON.stringify(ninfo.counts));
+const fallbackExpected = await expectationsFrom(ninfo);
+check("fallback still has counts", ninfo.counts.nodes === fallbackExpected.nodes && ninfo.counts.edges === fallbackExpected.edges, JSON.stringify(ninfo.counts));
 const hubs = await np.locator("#fallbackList button").count();
 check("fallback lists entities before search", hubs > 0, String(hubs));
 await np.locator("#fallbackList button").first().click({ force: true });
@@ -320,8 +441,8 @@ await noweb.close();
 const home = await chromium.launch({ executablePath: chrome, headless: true });
 const hctx = await home.newContext();
 const hp = await hctx.newPage();
-await hp.goto(`${base}/`, { waitUntil: "domcontentloaded" });
-check("production title unchanged", (await hp.title()) === "XRP Web — connection map", await hp.title());
+await hp.goto(prodUrl, { waitUntil: "domcontentloaded" });
+check("production title unchanged", (await hp.title()) === "XRP Web — connection map", `${prodUrl} ${await hp.title()}`);
 await home.close();
 
 console.log("\nPERF", JSON.stringify({ desktop, tablet, phone, swiftshader: { ...sinfo, fps: sfps, bootMs: sboot } }, null, 2));

@@ -1,13 +1,27 @@
+/**
+ * SOURCE SNAPSHOT FIXTURE.
+ * Exact totals are graph.json beside xrp-web-map commit fb3cd28:
+ * 2026-11-11T08:25:56-05:00, 2371 entities, 6704 connections.
+ * This is not the live public file. qa/live.test.mjs reads that at runtime.
+ * The preview repo does not contain graph.json, so these tests skip here.
+ */
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import test from "node:test";
 import {
   applyFilters, bestEdge, createModel, defaultFilters, edgesOf, searchNodes, shellAround, toursFor, validateGraph,
 } from "../js/graph.js";
 
-const live = JSON.parse(readFileSync(new URL("../../graph.json", import.meta.url), "utf8"));
+const fixtureUrl = new URL("../../graph.json", import.meta.url);
+const hasFixture = existsSync(fixtureUrl);
+const live = hasFixture ? JSON.parse(readFileSync(fixtureUrl, "utf8")) : null;
+const fixtureSkip = hasFixture ? false : "no ../../graph.json source snapshot; qa/live.test.mjs checks the public file";
 
-test("live public graph matches the last verified stamp and counts", () => {
+function fixtureTest(name, fn) {
+  test(`fixture: ${name}`, { skip: fixtureSkip }, fn);
+}
+
+fixtureTest("snapshot stamp and counts", () => {
   assert.equal(live.meta.updated, "2026-11-11T08:25:56-05:00");
   assert.equal(live.nodes.length, 2371);
   assert.equal(live.edges.length, 6704);
@@ -15,7 +29,7 @@ test("live public graph matches the last verified stamp and counts", () => {
   assert.equal(check.ok, true, check.errors.join("; "));
 });
 
-test("model keeps every current entity and connection", () => {
+fixtureTest("model keeps every current entity and connection", () => {
   const model = createModel(live);
   assert.equal(model.nodes.length, 2371);
   assert.equal(model.edges.length, 6704);
@@ -34,7 +48,7 @@ test("model keeps every current entity and connection", () => {
   }
 });
 
-test("default view is key connections and counts are computed", () => {
+fixtureTest("default view is key connections and counts are computed", () => {
   const model = createModel(live);
   assert.equal(model.filters.key, true);
   assert.ok(model.countE > 40 && model.countE < 140);
@@ -43,14 +57,14 @@ test("default view is key connections and counts are computed", () => {
   assert.equal(model.edges.filter((e) => e.key).length, model.countE);
 });
 
-test("search finds XRP and does not invent a hit", () => {
+fixtureTest("search finds XRP and does not invent a hit", () => {
   const model = createModel(live);
   const hits = searchNodes(model, "xrp", 5);
   assert.equal(hits[0].id, "xrp");
   assert.equal(searchNodes(model, "zzzz-not-an-entity", 5).length, 0);
 });
 
-test("tours only cite pairs that exist and keep adoption distinct", () => {
+fixtureTest("tours only cite pairs that exist and keep adoption distinct", () => {
   const model = createModel(live);
   const tours = toursFor(model);
   const ids = tours.map((tour) => tour.id);
@@ -84,7 +98,7 @@ test("tours only cite pairs that exist and keep adoption distinct", () => {
   assert.equal(toursFor(broken).some((tour) => tour.id === "xmoney" || tour.id === "stack"), false);
 });
 
-test("a removed X Money edge drops that step rather than inventing it", () => {
+fixtureTest("a removed X Money edge drops that step rather than inventing it", () => {
   const copy = structuredClone(live);
   copy.edges = copy.edges.filter((edge) => !(
     (edge.from === "musk" && edge.to === "xmoney") || (edge.from === "xmoney" && edge.to === "musk")
@@ -124,7 +138,7 @@ test("schema failures are explicit", () => {
   assert.ok(loose.warnings.length >= 1);
 });
 
-test("galaxy has vertical depth and a selection shell only moves real neighbors", () => {
+fixtureTest("galaxy has vertical depth and a selection shell only moves real neighbors", () => {
   const model = createModel(live);
   const zs = model.nodes.map((node) => node.z);
   assert.ok(Math.max(...zs) - Math.min(...zs) > 1200);
@@ -140,7 +154,7 @@ test("galaxy has vertical depth and a selection shell only moves real neighbors"
   assert.equal(again[0].z, shell[0].z);
 });
 
-test("key filter can be cleared without changing totals", () => {
+fixtureTest("key filter can be cleared without changing totals", () => {
   const model = createModel(live);
   applyFilters(model, { key: false });
   assert.equal(model.countN, model.nodes.filter((node) => node.deg > 0).length);

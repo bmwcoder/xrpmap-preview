@@ -38,7 +38,7 @@ a { color: #c9dbff; }
 .lab span { position: relative; left: 12px; top: -8px; }
 .lab.gold span { color: #ffe7a3; border-color: rgba(230, 193, 90, .95); }
 .lab.sel span { border: 2px solid #f6d98a; color: #fff; }
-.lab.sl { letter-spacing: .16em; text-transform: uppercase; font-size: 11px; }
+.lab.sl { letter-spacing: .06em; text-transform: uppercase; font-size: 11px; }
 .lab.sl span { left: 0; transform: translateX(-50%); }
 
 #boot, #fallback { position: absolute; inset: 0; display: grid; place-items: center; background: rgba(7, 11, 20, .92); z-index: 5; padding: 24px; text-align: center; }
@@ -67,7 +67,7 @@ a { color: #c9dbff; }
 #results .empty { margin: 8px; color: var(--muted); }
 .actions { display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; }
 
-#filters { position: fixed; z-index: 6; top: calc(var(--top, 62px) + var(--sa-t)); left: 0; right: 0; display: flex; gap: 6px; padding: 0 12px 8px; overflow-x: auto; }
+#filters { position: fixed; z-index: 6; top: calc(var(--top, 62px) + var(--sa-t)); left: 0; right: 0; display: flex; flex-wrap: wrap; align-items: center; gap: 6px; padding: 0 12px 10px; overflow: visible; background: rgba(7, 11, 20, .96); }
 #filters button { flex: none; white-space: nowrap; }
 #filters button[aria-pressed="true"] { background: #2a2416; border-color: rgba(230, 193, 90, .7); color: var(--gold); }
 .sep { width: 1px; align-self: stretch; background: var(--line); flex: none; }
