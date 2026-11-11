@@ -113,9 +113,11 @@ details.all .conn.more { display: block; }
 .text { color: #c9dbff; padding: 6px 0; min-height: 36px; }
 details summary { cursor: pointer; padding: 8px 0; }
 
-#tour { position: fixed; z-index: 7; left: 12px; right: 12px; bottom: calc(var(--foot, 84px) + 12px + var(--sa-b)); max-width: 640px; background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 12px 14px; }
-#tour .tbar { display: flex; justify-content: space-between; gap: 12px; align-items: center; }
-#tour p { margin: 6px 0; }
+#tour { position: fixed; z-index: 7; left: 12px; right: auto; bottom: calc(var(--foot, 84px) + 12px + var(--sa-b)); width: min(320px, calc(100vw - 24px)); max-height: 28vh; overflow: auto; background: rgba(16, 23, 38, .78); border: 1px solid var(--line); border-radius: 12px; padding: 8px 10px; }
+#tour .tbar { display: flex; justify-content: space-between; gap: 8px; align-items: center; }
+#tour .tbar p { margin: 0; font-size: 14px; }
+#tour p { margin: 4px 0; font-size: 13px; }
+#tEvidence summary { cursor: pointer; }
 #tCount, #tSource, #tMotion { color: var(--muted); }
 #tMotion { margin: 4px 0; font-size: 13px; }
 body.touring #panel { display: none !important; }
@@ -165,7 +167,7 @@ body:has(#panel:not([hidden])) #zoom { right: min(448px, calc(100vw - 54px)); }
   body:has(#panel:not([hidden])) #zoom,
   body:has(#fallback:not([hidden])) #zoom { display: none; }
   body.keyboard #foot, body.keyboard #zoom, body.keyboard #hint { display: none; }
-  #tour { max-width: none; }
+  #tour { width: min(300px, calc(100vw - 24px)); max-height: 24dvh; }
   #foot { font-size: 12px; }
   #foot .legal, #latest { display: none; }
 }

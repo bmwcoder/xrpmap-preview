@@ -9,7 +9,7 @@ import { drawScale, graphCandidates } from "./source.js";
 
 const CACHE_NAME = "xrpmap-space-graph-v1";
 const CACHE_REQ = new Request(new URL("./graph-cache.json", document.baseURI));
-const CODE = "space-preview-6";
+const CODE = "space-preview-7";
 
 const $ = (sel, root = document) => root.querySelector(sel);
 const $$ = (sel, root = document) => [...root.querySelectorAll(sel)];
@@ -663,7 +663,7 @@ function simplifySpace(space) {
   if (space.bloom) space.bloom.enabled = false;
   if (software && space.sky) space.sky.visible = false;
   space.resize();
-  space.lineMul = 1.7;
+  space.lineMul = 1;
   space.scene.traverse((obj) => {
     if (obj.isSprite && obj.scale && obj.scale.x > 500 && obj.material) {
       obj.material.opacity = Math.min(obj.material.opacity ?? 0.4, 0.14);
@@ -772,7 +772,10 @@ function zoom(scale) {
 function setMotion(off) {
   const was = state.motionOff;
   state.motionOff = off;
-  if (state.space) state.space.motionOff = off;
+  if (state.space) {
+    state.space.motionOff = off;
+    if (off) state.space.cancelFly();
+  }
   $("#pauseBtn").setAttribute("aria-pressed", String(off));
   $("#pauseBtn").textContent = off ? "Resume motion" : "Pause";
   const note = $("#tMotion");
@@ -783,6 +786,12 @@ function setMotion(off) {
   }
   if (was && !off && state.tour) showStep();
 }
+
+function sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+let tourToken = 0;
 
 function fitGalaxy(duration = 900) {
   const space = state.space;
@@ -837,6 +846,7 @@ async function goHome() {
 }
 
 function stopTour(resetCamera) {
+  tourToken += 1;
   state.tour = null;
   state.step = 0;
   $("#tour").hidden = true;
@@ -854,6 +864,7 @@ function stopTour(resetCamera) {
 async function showStep() {
   const tour = state.tour;
   if (!tour || !state.space) return;
+  const token = ++tourToken;
   const step = tour.steps[state.step];
   if (!(step.focus >= 0)) applyFocusLayout(-1);
   $("#tTitle").textContent = tour.title;
@@ -871,7 +882,7 @@ async function showStep() {
   state.space.tourOn = true;
   state.space.setPath((step.path || []).map((p) => ({ a: p.a, b: p.b })));
   state.space.setGroup(step.group && step.group.length ? step.group : null);
-  const dur = state.motionOff ? 1 : 2100;
+  const dur = state.motionOff ? 1 : 5200;
   if (step.overview) {
     state.space.select(-1, false);
     state.sel = -1;
@@ -898,6 +909,13 @@ async function showStep() {
       renderPanel();
     }
     await frameIds(ids, dur);
+  }
+  if (token !== tourToken || !state.tour || state.motionOff) return;
+  await sleep(2200);
+  if (token !== tourToken || !state.tour || state.motionOff) return;
+  if (state.step < state.tour.steps.length - 1) {
+    state.step += 1;
+    await showStep();
   }
 }
 

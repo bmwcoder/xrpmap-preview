@@ -1,6 +1,6 @@
 diff -ruN a/space/css/app.css b/space/css/app.css
 --- a/space/css/app.css	2026-11-11 16:02:35.921286940 +0000
-+++ b/space/css/app.css	2026-11-11 17:20:27.539013539 +0000
++++ b/space/css/app.css	2026-11-11 17:35:37.805905643 +0000
 @@ -19,7 +19,7 @@
  }
  * { box-sizing: border-box; }
@@ -71,17 +71,25 @@ diff -ruN a/space/css/app.css b/space/css/app.css
  .g { display: inline-grid; place-items: center; min-width: 1.3em; border-radius: 4px; font-size: 12px; padding: 0 4px; }
  .gA { background: #1f6b45; } .gB { background: #7a5a16; } .gC { background: #3d4658; } .gX { background: #7a2e2e; } .gU { background: #3d4658; }
  .side { font-size: 13px; }
-@@ -108,7 +116,8 @@
- #tour { position: fixed; z-index: 7; left: 12px; right: 12px; bottom: calc(var(--foot, 84px) + 12px + var(--sa-b)); max-width: 640px; background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 12px 14px; }
- #tour .tbar { display: flex; justify-content: space-between; gap: 12px; align-items: center; }
- #tour p { margin: 6px 0; }
+@@ -105,10 +113,13 @@
+ .text { color: #c9dbff; padding: 6px 0; min-height: 36px; }
+ details summary { cursor: pointer; padding: 8px 0; }
+ 
+-#tour { position: fixed; z-index: 7; left: 12px; right: 12px; bottom: calc(var(--foot, 84px) + 12px + var(--sa-b)); max-width: 640px; background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 12px 14px; }
+-#tour .tbar { display: flex; justify-content: space-between; gap: 12px; align-items: center; }
+-#tour p { margin: 6px 0; }
 -#tCount, #tSource { color: var(--muted); }
++#tour { position: fixed; z-index: 7; left: 12px; right: auto; bottom: calc(var(--foot, 84px) + 12px + var(--sa-b)); width: min(320px, calc(100vw - 24px)); max-height: 28vh; overflow: auto; background: rgba(16, 23, 38, .78); border: 1px solid var(--line); border-radius: 12px; padding: 8px 10px; }
++#tour .tbar { display: flex; justify-content: space-between; gap: 8px; align-items: center; }
++#tour .tbar p { margin: 0; font-size: 14px; }
++#tour p { margin: 4px 0; font-size: 13px; }
++#tEvidence summary { cursor: pointer; }
 +#tCount, #tSource, #tMotion { color: var(--muted); }
 +#tMotion { margin: 4px 0; font-size: 13px; }
  body.touring #panel { display: none !important; }
  
  #zoom { position: fixed; z-index: 6; right: calc(12px + var(--sa-r)); bottom: calc(var(--foot, 84px) + 12px + var(--sa-b)); display: flex; flex-direction: column; gap: 6px; }
-@@ -135,23 +144,27 @@
+@@ -135,24 +146,28 @@
  .sheet h2 { margin-top: 0; }
  
  #filterBtn { display: none; }
@@ -116,13 +124,15 @@ diff -ruN a/space/css/app.css b/space/css/app.css
 +  #panel .c1 button { min-height: 44px; }
    body:has(#panel:not([hidden])) #zoom,
    body:has(#fallback:not([hidden])) #zoom { display: none; }
+-  #tour { max-width: none; }
 +  body.keyboard #foot, body.keyboard #zoom, body.keyboard #hint { display: none; }
-   #tour { max-width: none; }
++  #tour { width: min(300px, calc(100vw - 24px)); max-height: 24dvh; }
    #foot { font-size: 12px; }
    #foot .legal, #latest { display: none; }
+ }
 diff -ruN a/space/index.html b/space/index.html
 --- a/space/index.html	2026-11-11 16:02:35.921286940 +0000
-+++ b/space/index.html	2026-11-11 17:17:18.892491682 +0000
++++ b/space/index.html	2026-11-11 17:35:37.917907302 +0000
 @@ -60,13 +60,14 @@
    <button type="button" data-grade="C" aria-pressed="false">C claim</button>
    <button type="button" data-grade="X" aria-pressed="false">X false</button>
@@ -140,24 +150,31 @@ diff -ruN a/space/index.html b/space/index.html
  
  <aside id="panel" hidden aria-labelledby="pTitle">
    <div id="pGrab" aria-hidden="true"><i></i></div>
-@@ -85,6 +86,7 @@
+@@ -84,8 +85,12 @@
+       <button type="button" id="tStop">End</button>
      </div>
    </div>
-   <p id="tCaption"></p>
+-  <p id="tCaption"></p>
+-  <p id="tSource"></p>
 +  <p id="tMotion"></p>
-   <p id="tSource"></p>
++  <details id="tEvidence">
++    <summary>Evidence</summary>
++    <p id="tCaption"></p>
++    <p id="tSource"></p>
++  </details>
  </section>
  
-@@ -96,7 +98,7 @@
+ <div id="zoom" aria-label="Zoom">
+@@ -96,7 +101,7 @@
  
  <footer id="foot">
    <p id="counts" aria-live="polite"></p>
 -  <p><time id="updated"></time> · <span id="dataFrom"></span> · code <span id="code">space-preview-2</span> · <button type="button" id="reloadBtn">Check for a newer graph</button></p>
-+  <p><time id="updated"></time> · <span id="dataFrom"></span> · code <span id="code">space-preview-6</span> · <button type="button" id="reloadBtn">Check for a newer graph</button></p>
++  <p><time id="updated"></time> · <span id="dataFrom"></span> · code <span id="code">space-preview-7</span> · <button type="button" id="reloadBtn">Check for a newer graph</button></p>
    <p id="soft" class="legal" hidden></p>
    <p class="legal">Not investment advice. A line is a connection, not adoption. The author holds XRP. <a href="https://xrpmap.org/">Current map</a>. Unlisted preview, not private.</p>
    <details id="latest">
-@@ -110,12 +112,13 @@
+@@ -110,12 +115,13 @@
      <button type="button" class="x" data-close aria-label="Close help">Close</button>
      <h2 id="helpTitle">How to read this preview</h2>
      <p><b>Connections</b> are lines. Each line means a public source ties two entities in the way the label says. Size is how many connections an entity has. A connection is not a partnership, control, or wrongdoing unless the label and the source say so.</p>
@@ -176,7 +193,7 @@ diff -ruN a/space/index.html b/space/index.html
  </div>
 diff -ruN a/space/js/app.js b/space/js/app.js
 --- a/space/js/app.js	2026-11-11 16:02:35.921286940 +0000
-+++ b/space/js/app.js	2026-11-11 17:27:18.080892866 +0000
++++ b/space/js/app.js	2026-11-11 17:36:03.858306435 +0000
 @@ -1,14 +1,15 @@
  import {
 -  CENTER_IDS, GRADE_TEXT, GRADES, SIDE_HINT, SIDE_TEXT, SIDES,
@@ -192,7 +209,7 @@ diff -ruN a/space/js/app.js b/space/js/app.js
  const CACHE_REQ = new Request(new URL("./graph-cache.json", document.baseURI));
 -const CODE = "space-preview-2";
 -const PUBLIC_GRAPH = "https://xrpmap.org/graph.json";
-+const CODE = "space-preview-6";
++const CODE = "space-preview-7";
  
  const $ = (sel, root = document) => root.querySelector(sel);
  const $$ = (sel, root = document) => [...root.querySelectorAll(sel)];
@@ -512,22 +529,22 @@ diff -ruN a/space/js/app.js b/space/js/app.js
 -    space.dpr = software ? (pixels > 700000 ? 0.5 : 0.85) : 1;
 -    space.resize();
 -  }
+-  space.motionOff = state.motionOff;
 +  space.dpr = drawScale(window.devicePixelRatio, software);
 +  space.directRender = true;
 +  space.bloomOn = false;
 +  if (space.bloom) space.bloom.enabled = false;
 +  if (software && space.sky) space.sky.visible = false;
 +  space.resize();
-+  space.lineMul = 1.7;
+   space.lineMul = 1;
+-  space.controls.autoRotateSpeed = 0.12;
 +  space.scene.traverse((obj) => {
 +    if (obj.isSprite && obj.scale && obj.scale.x > 500 && obj.material) {
 +      obj.material.opacity = Math.min(obj.material.opacity ?? 0.4, 0.14);
 +      obj.material.needsUpdate = true;
 +    }
 +  });
-   space.motionOff = state.motionOff;
--  space.lineMul = 1;
--  space.controls.autoRotateSpeed = 0.12;
++  space.motionOff = state.motionOff;
 +  space.controls.rotateSpeed = phone() ? 0.48 : 0.62;
 +  space.controls.dampingFactor = phone() ? 0.16 : 0.1;
 +  space.controls.autoRotateSpeed = 0.08;
@@ -556,13 +573,17 @@ diff -ruN a/space/js/app.js b/space/js/app.js
      }
    } catch (error) {
      console.error(error);
-@@ -571,10 +770,18 @@
+@@ -571,12 +770,29 @@
  }
  
  function setMotion(off) {
 +  const was = state.motionOff;
    state.motionOff = off;
-   if (state.space) state.space.motionOff = off;
+-  if (state.space) state.space.motionOff = off;
++  if (state.space) {
++    state.space.motionOff = off;
++    if (off) state.space.cancelFly();
++  }
    $("#pauseBtn").setAttribute("aria-pressed", String(off));
 -  $("#pauseBtn").textContent = off ? "Motion off" : "Pause";
 +  $("#pauseBtn").textContent = off ? "Resume motion" : "Pause";
@@ -573,10 +594,18 @@ diff -ruN a/space/js/app.js b/space/js/app.js
 +      : "";
 +  }
 +  if (was && !off && state.tour) showStep();
++}
++
++function sleep(ms) {
++  return new Promise((resolve) => setTimeout(resolve, ms));
  }
  
++let tourToken = 0;
++
  function fitGalaxy(duration = 900) {
-@@ -604,8 +811,12 @@
+   const space = state.space;
+   if (!space) return Promise.resolve();
+@@ -604,8 +820,12 @@
    const vLimit = rad / Math.sin(fov / 2);
    const hFov = 2 * Math.atan(Math.tan(fov / 2) * aspect);
    const hLimit = rad / Math.sin(hFov / 2);
@@ -591,7 +620,21 @@ diff -ruN a/space/js/app.js b/space/js/app.js
    const eye = space.camera.position.clone().set(cx + dist * 0.2, cy - dist * 0.86, cz + dist * 0.38);
    const target = space.controls.target.clone().set(cx, cy, cz);
    return space.flyTo(eye, target, state.motionOff ? 1 : duration);
-@@ -648,33 +859,45 @@
+@@ -626,6 +846,7 @@
+ }
+ 
+ function stopTour(resetCamera) {
++  tourToken += 1;
+   state.tour = null;
+   state.step = 0;
+   $("#tour").hidden = true;
+@@ -643,38 +864,58 @@
+ async function showStep() {
+   const tour = state.tour;
+   if (!tour || !state.space) return;
++  const token = ++tourToken;
+   const step = tour.steps[state.step];
+   if (!(step.focus >= 0)) applyFocusLayout(-1);
    $("#tTitle").textContent = tour.title;
    $("#tCount").textContent = `${state.step + 1} of ${tour.steps.length}`;
    $("#tCaption").textContent = step.caption;
@@ -607,7 +650,7 @@ diff -ruN a/space/js/app.js b/space/js/app.js
    state.space.tourOn = true;
    state.space.setPath((step.path || []).map((p) => ({ a: p.a, b: p.b })));
    state.space.setGroup(step.group && step.group.length ? step.group : null);
-+  const dur = state.motionOff ? 1 : 2100;
++  const dur = state.motionOff ? 1 : 5200;
    if (step.overview) {
      state.space.select(-1, false);
      state.sel = -1;
@@ -647,10 +690,17 @@ diff -ruN a/space/js/app.js b/space/js/app.js
 +      renderPanel();
 +    }
 +    await frameIds(ids, dur);
++  }
++  if (token !== tourToken || !state.tour || state.motionOff) return;
++  await sleep(2200);
++  if (token !== tourToken || !state.tour || state.motionOff) return;
++  if (state.step < state.tour.steps.length - 1) {
++    state.step += 1;
++    await showStep();
    }
  }
  
-@@ -765,6 +988,29 @@
+@@ -765,6 +1006,29 @@
    });
    $("#tStop").addEventListener("click", () => stopTour(true));
    $("#helpBtn").addEventListener("click", () => { $("#help").hidden = false; });
@@ -680,7 +730,7 @@ diff -ruN a/space/js/app.js b/space/js/app.js
    $$("[data-close]").forEach((btn) => btn.addEventListener("click", () => { btn.closest(".modal").hidden = true; }));
    $("#panel").addEventListener("click", (event) => {
      const more = event.target.closest(".more-btn");
-@@ -895,6 +1141,7 @@
+@@ -895,6 +1159,7 @@
    };
    searchPlaceholder();
    addEventListener("resize", () => { searchPlaceholder(); placeChrome(); });
@@ -891,7 +941,7 @@ diff -ruN a/space/js/source.js b/space/js/source.js
 +}
 diff -ruN a/space/js/space-WZLWI5EC.js b/space/js/space-WZLWI5EC.js
 --- a/space/js/space-WZLWI5EC.js	2026-11-11 16:02:35.921286940 +0000
-+++ b/space/js/space-WZLWI5EC.js	2026-11-11 17:16:27.507052496 +0000
++++ b/space/js/space-WZLWI5EC.js	2026-11-11 17:35:30.917804548 +0000
 @@ -4446,7 +4446,7 @@
  varying vec3 vColor; varying float vAlpha; varying vec2 vUv; varying float vSel;
  void main(){
@@ -906,7 +956,7 @@ diff -ruN a/space/js/space-WZLWI5EC.js b/space/js/space-WZLWI5EC.js
      vec3 col; col.r = texture2D(tDiffuse, vUv+off).r; col.g = texture2D(tDiffuse, vUv).g; col.b = texture2D(tDiffuse, vUv-off).b;
      col *= smoothstep(0.95,0.25,r)*0.35+0.65; col = col/(1.0+col*0.3);
 -    col += (h(vUv*1000.0+fract(uTime)*91.0)-0.5)*0.012; gl_FragColor = vec4(col,1.0); }`}});function Su(i){let t=document.createElement("canvas");t.width=t.height=128;let e=t.getContext("2d"),n=e.createRadialGradient(64,64,0,64,64,64);i.forEach(([r,a])=>n.addColorStop(r,a)),e.fillStyle=n,e.fillRect(0,0,128,128);let s=new Zi(t);return s.colorSpace=Ue,s}function F_(){let i=document.createElement("canvas");i.width=i.height=256;let t=i.getContext("2d");t.strokeStyle="rgba(250,214,110,0.9)",t.lineWidth=3,t.beginPath(),t.arc(128,128,110,.2,Math.PI*1.35),t.stroke(),t.strokeStyle="rgba(250,214,110,0.45)",t.lineWidth=2,t.beginPath(),t.arc(128,128,122,Math.PI*1.5,Math.PI*2.3),t.stroke(),t.setLineDash([2,10]),t.strokeStyle="rgba(250,214,110,0.6)",t.beginPath(),t.arc(128,128,96,0,Math.PI*2),t.stroke();let e=new Zi(i);return e.colorSpace=Ue,e}var U_,Mu,O_=ze(()=>{bn();nu();su();ru();lu();$l();hu();Pu();Iu();yu();U_=i=>new L(i.x,-i.y,i.z);Mu=class{constructor(t,e,n,s){this.host=t,this.labelsEl=e,this.s=n,this.opts=s,this.mobile=matchMedia("(pointer:coarse)").matches||innerWidth<820,this.dprCap=this.mobile?1.5:2,this.dpr=Math.min(window.devicePixelRatio||1,this.dprCap),this.bloomOn=!0,this.sel=-1,this.active=!1,this.frames=[],this.fps=0;let r=new go({antialias:!this.mobile&&!s.software,powerPreference:s.software?"low-power":"high-performance",alpha:!1,preserveDrawingBuffer:!!s.preserve});r.setPixelRatio(this.dpr),r.setClearColor(66314,1),this.renderer=r,t.appendChild(r.domElement),r.domElement.className="gl",this.scene=new Cs,this.camera=new Fe(50,1,5,2e5),this.camera.up.set(0,0,1),this.camera.position.set(1400,-6200,4300),this.controls=new yo(this.camera,r.domElement),Object.assign(this.controls,{enableDamping:!0,dampingFactor:.08,rotateSpeed:.6,zoomSpeed:.9,minDistance:60,maxDistance:16e3,autoRotate:!0,autoRotateSpeed:.18}),this.controls.addEventListener("start",()=>{this.userBusy=!0,this.cancelFly(),this.opts.onInteract&&this.opts.onInteract()}),this.controls.addEventListener("end",()=>{this.userBusy=!1}),this.build(),this.labels=new Map,this.resize(),window.addEventListener("resize",()=>this.resize()),this.bindPick(),this.lastT=performance.now(),this.loop=this.loop.bind(this),requestAnimationFrame(this.loop)}build(){let t=this.s,e=t.nodes.length,n=this.scene;this.sky=new Ce(new Bs(9e4,32,24),new re({vertexShader:_u,fragmentShader:xu,side:Re,depthWrite:!1})),n.add(this.sky);let s=this.opts.software?1200:this.mobile?4e3:8e3,r=new Float32Array(s*3),a=new Float32Array(s),o=new Float32Array(s*3),l=new Float32Array(s);for(let A=0;A<s;A++){let U=zn(A*3.1)*2-1,X=zn(A*7.7)*Math.PI*2,G=4e4+zn(A*1.3)*3e4,tt=Math.sqrt(1-U*U);r.set([G*tt*Math.cos(X),G*tt*Math.sin(X),G*U],A*3);let q=zn(A*5.5);a[A]=1.2+Math.pow(q,6)*3.2;let K=zn(A*9.1),Q=K<.2?[.75,.85,1]:K<.3?[1,.85,.7]:[.9,.92,1],bt=.25+Math.pow(q,3)*.9;o.set([Q[0]*bt,Q[1]*bt,Q[2]*bt],A*3),l[A]=zn(A*2.2)}let c=new pe;c.setAttribute("position",new le(r,3)),c.setAttribute("aSize",new le(a,1)),c.setAttribute("aColor",new le(o,3)),c.setAttribute("aPhase",new le(l,1)),this.starMat=new re({vertexShader:mu,fragmentShader:gu,uniforms:{uTime:{value:0},uPx:{value:this.dpr}},blending:Ke,depthWrite:!1,depthTest:!1,transparent:!0});let u=new Ns(c,this.starMat);u.frustumCulled=!1,n.add(u);let f={};for(let A of t.nodes){let U=A.sec;f[U]=f[U]||[0,0,0,0],f[U][0]+=A.x,f[U][1]+=-A.y,f[U][2]+=A.z,f[U][3]++}this.sectorAnchors=[];for(let A of t.sectors){let U=f[A.id];if(!U)continue;let X=new L(U[0]/U[3],U[1]/U[3],U[2]/U[3]),G=Su([[0,A.color+"55"],[.4,A.color+"18"],[1,A.color+"00"]]),tt=new pi(new Zn({map:G,blending:Ke,depthWrite:!1,depthTest:!1,transparent:!0,opacity:.55}));tt.position.copy(X);let q=1300+Math.sqrt(A.n)*70;tt.scale.set(q,q,1),n.add(tt);let K=(A.a0+A.a1)/2,Q=A.r1*.92;this.sectorAnchors.push({sec:A,center:X,label:new L(Math.cos(K)*Q,-Math.sin(K)*Q,0)})}let h=new pi(new Zn({map:Su([[0,"rgba(255,236,170,0.6)"],[.25,"rgba(180,160,255,0.22)"],[1,"rgba(0,0,0,0)"]]),blending:Ke,depthWrite:!1,depthTest:!1,transparent:!0}));h.scale.set(2600,2600,1),n.add(h);let m=F_();this.rings=[];for(let A of["xrp","ripple","rlusd","xrpl"]){let U=t.idx.get(A);if(U===void 0)continue;let X=new Zn({map:m,blending:Ke,depthWrite:!1,depthTest:!1,transparent:!0,opacity:A==="rlusd"||A==="ripple"?.9:.6}),G=new pi(X);G.position.copy(U_(t.nodes[U]));let tt=A==="xrpl"?150:200;G.scale.set(tt,tt,1),n.add(G),this.rings.push(G)}let _=new ks;_.setAttribute("position",new le(new Float32Array([-.5,-.5,0,.5,-.5,0,.5,.5,0,-.5,.5,0]),3)),_.setIndex([0,1,2,0,2,3]);let y=new Float32Array(e*3),g=new Float32Array(e*3),d=new Float32Array(e),w=new Float32Array(e),P=new Float32Array(e);for(let A of t.nodes){let U=A.i;y.set([A.x,-A.y,A.z],U*3);let X=pr(fr[A.type]||"#ffffff"),G=cc.includes(A.id)||A.id==="rlusd"?2.2:1.55;(A.id==="rlusd"||A.id==="ripple"||A.id==="xrp")&&(X[0]=1,X[1]=.82,X[2]=.36),g.set([X[0]*G,X[1]*G,X[2]*G],U*3),d[U]=5+Math.pow(A.deg,.42)*3.2,P[U]=zn(U)}this.iState=new Dn(w,1),this.iState.setUsage(ho),_.setAttribute("iPos",this.nodeAttr=new Dn(y,3)),_.setAttribute("iColor",new Dn(g,3)),_.setAttribute("iSize",new Dn(d,1)),_.setAttribute("iState",this.iState),_.setAttribute("iSeed",new Dn(P,1)),_.instanceCount=e,this.nodeMat=new re({vertexShader:uu,fragmentShader:du,blending:Ke,depthWrite:!1,depthTest:!1,transparent:!0,uniforms:{uScale:{value:1e3},uRes:{value:new _t(1,1)},uTime:{value:0},uFocus:{value:0},uPx:{value:this.dpr}}});let S=new Ce(_,this.nodeMat);S.frustumCulled=!1,S.renderOrder=2,n.add(S),this.nodePos=y,this.nodeSize=d;let M=t.edges.length,T=new Float32Array(M*6),C=new Float32Array(M*6),v=new Float32Array(M*6),E=new Float32Array(M*2),N=new Float32Array(M*2),F=Object.fromEntries(Object.entries(fr).map(([A,U])=>[A,pr(U)]));for(let A of t.edges){if(A.bad)continue;let U=A.j,X=t.nodes[A.a],G=t.nodes[A.b];T.set([X.x,-X.y,X.z,G.x,-G.y,G.z],U*6);let tt=F[X.type]||[1,1,1],q=F[G.type]||[1,1,1],K=.55+(A.strength||2)*.12;C.set([tt[0]*K,tt[1]*K,tt[2]*K,q[0]*K,q[1]*K,q[2]*K],U*6);let Q=pr(lc[A.grade]||"#ffffff");v.set([...Q,...Q],U*6),N.set([0,1],U*2)}let V=new pe;V.setAttribute("position",this.edgeAttr=new le(T,3)),this.edgePos=T,V.setAttribute("aColor",new le(C,3)),V.setAttribute("aHi",new le(v,3)),this.eState=new le(E,1),this.eState.setUsage(ho),V.setAttribute("aState",this.eState),V.setAttribute("aT",new le(N,1)),this.edgeMat=new re({vertexShader:fu,fragmentShader:pu,blending:Ke,depthWrite:!1,depthTest:!1,transparent:!0,uniforms:{uBase:{value:.06},uFocus:{value:0},uTime:{value:0}}});let H=new Ds(V,this.edgeMat);H.frustumCulled=!1,H.renderOrder=1,n.add(H),this.pathGroup=new Pn,n.add(this.pathGroup),this.composer=new Mo(this.renderer),this.composer.addPass(new bo(this.scene,this.camera)),this.bloom=new cs(new _t(256,256),this.mobile?.55:.75,.55,.18),this.composer.addPass(this.bloom),this.post=new ls(vu),this.mobile||this.composer.addPass(this.post),this.composer.addPass(new To)}resize(){let t=this.host.clientWidth||innerWidth,e=this.host.clientHeight||innerHeight;this.w=t,this.h=e,this.renderer.setPixelRatio(this.dpr),this.renderer.setSize(t,e,!1),this.renderer.domElement.style.width=t+"px",this.renderer.domElement.style.height=e+"px",this.composer.setPixelRatio(this.dpr),this.composer.setSize(t,e),this.mobile&&this.bloom.resolution.set(t/2,e/2),this.camera.aspect=t/e,this.camera.updateProjectionMatrix(),this.nodeMat.uniforms.uRes.value.set(t*this.dpr,e*this.dpr),this.nodeMat.uniforms.uScale.value=e*this.dpr/(Math.tan(this.camera.fov*Math.PI/360)*2),this.nodeMat.uniforms.uPx.value=this.dpr,this.starMat.uniforms.uPx.value=this.dpr}setActive(t){this.active=t,t&&(this.resize(),this.applyVisibility())}applyVisibility(){let t=this.s,e=this.iState.array,n=this.eState.array,s=new Set,r=new Set;if(this.sel>=0){s.add(this.sel);for(let o of t.adj[this.sel])if(t.ve[o]){let l=t.edges[o];r.add(o),s.add(l.a===this.sel?l.b:l.a)}}if(this.group)for(let o of this.group)s.add(o);if(this.groupEdges)for(let o of this.groupEdges)r.add(o);let a=this.sel>=0||!!this.group;for(let o of t.nodes)e[o.i]=!t.vn[o.i]&&(!this.group||!this.group.has(o.i))?-1:o.i===this.sel?2:s.has(o.i)?1:0;for(let o of t.edges){let l=o.bad?-1:r.has(o.j)?1:t.ve[o.j]?0:-1;n[o.j*2]=n[o.j*2+1]=l}this.iState.needsUpdate=!0,this.eState.needsUpdate=!0,this.focusTarget=a?1:0}select(t,e=!0){this.sel=t,this.applyVisibility(),t>=0&&e&&this.flyToNode(t)}setGroup(t,e){this.group=t?new Set(t):null,this.groupEdges=e?new Set(e):null,this.applyVisibility()}nodeVec(t){return new L(this.nodePos[t*3],this.nodePos[t*3+1],this.nodePos[t*3+2])}syncPositions(t){let e=this.nodePos,n=this.s;for(let s of n.nodes){let a=t?t(s):null,o=a?a[0]:s.x,l=a?a[1]:s.y,c=a?a[2]:s.z;e.set([o,-l,c],s.i*3)}this.nodeAttr.needsUpdate=!0;let d=this.edgePos;for(let s of n.edges){if(s.bad)continue;let a=s.a*3,o=s.b*3;d.set([e[a],e[a+1],e[a+2],e[o],e[o+1],e[o+2]],s.j*6)}this.edgeAttr.needsUpdate=!0}flyToNode(t,e){let n=this.nodeVec(t),s=this.s.nodes[t],r=e||Math.min(1400,Math.max(420,260+Math.sqrt(s.deg)*90)),a=this.camera.position.clone().sub(this.controls.target).normalize();return a.z<.25&&(a.z=.35,a.normalize()),this.flyTo(n.clone().add(a.multiplyScalar(r)),n,1600)}flyTo(t,e,n=1800){return this.cancelFly(),new Promise(s=>{if(this.motionOff){this.camera.position.copy(t),this.controls.target.copy(e),this.controls.update(),s(!0);return}this.fly={p0:this.camera.position.clone(),t0v:this.controls.target.clone(),p1:t.clone(),t1v:e.clone(),start:performance.now(),dur:n,res:s}})}cancelFly(){if(this.fly){let t=this.fly.res;this.fly=null,t&&t(!1)}}overview(t=2200){return this.flyTo(new L(1100,-4200,2400),new L(0,0,0),t)}bindPick(){let t=this.renderer.domElement,e=null;t.addEventListener("pointerdown",n=>{e=[n.clientX,n.clientY,n.timeStamp]}),t.addEventListener("pointerup",n=>{if(!e)return;let s=Math.hypot(n.clientX-e[0],n.clientY-e[1]),r=n.timeStamp-e[2];if(e=null,s>8||r>700)return;let a=t.getBoundingClientRect();this.opts.onPick(this.pick(n.clientX-a.left,n.clientY-a.top))})}pick(t,e){let n=this.s,s=new L,r=this.camera;r.updateMatrixWorld();let a=this.iState.array,o=-1,l=1e9,c=matchMedia("(pointer:coarse)").matches,u=this.nodeMat.uniforms.uScale.value/this.dpr;for(let f=0;f<n.nodes.length;f++){if(a[f]<0)continue;s.set(this.nodePos[f*3],this.nodePos[f*3+1],this.nodePos[f*3+2]);let h=s.clone().applyMatrix4(r.matrixWorldInverse).z*-1;if(h<=1||(s.project(r),s.z>1))continue;let m=(s.x+1)/2*this.w,_=(1-s.y)/2*this.h,y=Math.max(c?22:14,this.nodeSize[f]*u/h*.22),g=Math.hypot(m-t,_-e);g<y&&g/y+h/3e4<l&&(l=g/y+h/3e4,o=f)}return o}setPath(t){for(let e of[...this.pathGroup.children])this.pathGroup.remove(e),e.geometry.dispose(),e.material.dispose();this.pathSegs=[];for(let e of t||[]){let n=this.nodeVec(e.a),s=this.nodeVec(e.b),r=new pe().setFromPoints([n,n.clone()]),a=new qi({color:new Lt(e.color||"#facc15").multiplyScalar(2.2),transparent:!0,opacity:.95,blending:Ke,depthTest:!1,depthWrite:!1}),o=new Yi(r,a);o.renderOrder=3,o.frustumCulled=!1,this.pathGroup.add(o),this.pathSegs.push({line:o,A:n,B:s,t0:performance.now()+(e.delay||0),dur:900})}}setLabelSet(t){this.labelFn=t}updateLabels(){let t=this.s,e=this.camera,n=new L,s=[],r=this.iState.array;if(!this.tourOn&&this.sel<0)for(let l of this.sectorAnchors)s.push({key:"s:"+l.sec.id,pos:l.center,cls:"sl",text:l.sec.title.replace(/\s*\(.*\)/,""),color:l.sec.color});let a=this.labelFn?this.labelFn():[];for(let l of a)(!(r[l.i]<0)||l.force)&&s.push({key:"n:"+l.i,pos:this.nodeVec(l.i),cls:l.cls||"nl",text:l.text||t.nodes[l.i].lbl,color:fr[t.nodes[l.i].type]});let o=new Set;for(let l of s){o.add(l.key);let c=this.labels.get(l.key);if(c||(c=document.createElement("div"),c.className="lab "+l.cls,c.innerHTML=`<i style="background:${l.color};box-shadow:0 0 8px ${l.color}"></i><span></span>`,c.querySelector("span").textContent=l.text,l.cls==="sl"&&(c.style.color=l.color),this.labelsEl.appendChild(c),this.labels.set(l.key,c)),n.copy(l.pos).project(e),n.z>1||Math.abs(n.x)>1.1||Math.abs(n.y)>1.1){c.style.opacity=0;continue}let u=(n.x+1)/2*this.w,f=(1-n.y)/2*this.h,h=e.position.distanceTo(l.pos),m=l.cls==="sl"?Math.min(1,Math.max(0,(h-1800)/2500)):l.cls==="nl"?Math.min(1,Math.max(.25,1-(h-3500)/6e3)):1;c.style.opacity=m,c.style.transform=`translate(${u.toFixed(1)}px,${f.toFixed(1)}px)`}for(let[l,c]of this.labels)o.has(l)||(c.remove(),this.labels.delete(l))}screenPos(t){let e=this.nodeVec(t).project(this.camera);return e.z>1?null:[(e.x+1)/2*this.w,(1-e.y)/2*this.h]}loop(){requestAnimationFrame(this.loop);let t=performance.now(),e=Math.min(.1,(t-this.lastT)/1e3);if(this.lastT=t,!this.active)return;let n=performance.now(),s=n/1e3;for(this.frames.push(n);this.frames.length&&n-this.frames[0]>1e3;)this.frames.shift();if(this.fps=this.frames.length,this.started&&n-(this.lastQ||this.started)>3500&&(this.lastQ=n,this.fps<40&&this.bloomOn?(this.bloom.enabled=!1,this.bloomOn=!1):this.fps<28&&this.dpr>1&&(this.dpr=1,this.resize())),this.started||(this.started=n),this.fly){let o=this.fly,l=Math.min(1,(n-o.start)/o.dur),c=Ao(l),u=Math.sin(l*Math.PI)*o.p0.distanceTo(o.p1)*.12;if(this.camera.position.lerpVectors(o.p0,o.p1,c),this.camera.position.z+=u,this.controls.target.lerpVectors(o.t0v,o.t1v,c),l>=1){let f=o.res;this.fly=null,f(!0)}}this.controls.autoRotate=!this.motionOff&&!this.userBusy&&!this.fly&&this.sel<0&&!this.tourOn&&!this.group,this.controls.update(e);let r=this.nodeMat.uniforms.uFocus;this.motionOff?r.value=this.focusTarget||0:r.value+=((this.focusTarget||0)-r.value)*Math.min(1,e*5),this.edgeMat.uniforms.uFocus.value=r.value;if(!this.motionOff){for(let o of[this.nodeMat,this.edgeMat,this.starMat])o.uniforms.uTime.value=s;this.post.uniforms.uTime.value=s}let a=this.camera.position.distanceTo(this.controls.target);if(this.edgeMat.uniforms.uBase.value=(a<2500?.14:a<5e3?.085:a<9e3?.045:.03)*(this.lineMul??1),!this.motionOff&&this.rings.forEach((o,l)=>{o.material.rotation=s*(l%2?-.25:.2)}),this.pathSegs)for(let o of this.pathSegs){let l=Math.min(1,Math.max(0,(n-o.t0)/o.dur)),c=o.line.geometry.attributes.position,u=o.A.clone().lerp(o.B,Ao(l));c.setXYZ(1,u.x,u.y,u.z),c.needsUpdate=!0}this.directRender?this.renderer.render(this.scene,this.camera):this.bloomOn?this.composer.render():(this.composer.passes[1].enabled=!1,this.composer.render()),this.updateLabels(),this.opts.onFrame&&this.opts.onFrame()}}});O_();export{Mu as Space,U_ as W3,U_ as toWorld3};
-+    col += (h(vUv*1000.0+fract(uTime)*91.0)-0.5)*0.012; gl_FragColor = vec4(col,1.0); }`}});function Su(i){let t=document.createElement("canvas");t.width=t.height=128;let e=t.getContext("2d"),n=e.createRadialGradient(64,64,0,64,64,64);i.forEach(([r,a])=>n.addColorStop(r,a)),e.fillStyle=n,e.fillRect(0,0,128,128);let s=new Zi(t);return s.colorSpace=Ue,s}function F_(){let i=document.createElement("canvas");i.width=i.height=256;let t=i.getContext("2d");t.strokeStyle="rgba(250,214,110,0.9)",t.lineWidth=3,t.beginPath(),t.arc(128,128,110,.2,Math.PI*1.35),t.stroke(),t.strokeStyle="rgba(250,214,110,0.45)",t.lineWidth=2,t.beginPath(),t.arc(128,128,122,Math.PI*1.5,Math.PI*2.3),t.stroke(),t.setLineDash([2,10]),t.strokeStyle="rgba(250,214,110,0.6)",t.beginPath(),t.arc(128,128,96,0,Math.PI*2),t.stroke();let e=new Zi(i);return e.colorSpace=Ue,e}var U_,Mu,O_=ze(()=>{bn();nu();su();ru();lu();$l();hu();Pu();Iu();yu();U_=i=>new L(i.x,-i.y,i.z);Mu=class{constructor(t,e,n,s){this.host=t,this.labelsEl=e,this.s=n,this.opts=s,this.mobile=matchMedia("(pointer:coarse)").matches||innerWidth<820,this.dprCap=this.mobile?1.5:2,this.dpr=Math.min(window.devicePixelRatio||1,this.dprCap),this.bloomOn=!0,this.sel=-1,this.active=!1,this.frames=[],this.fps=0;let r=new go({antialias:!s.software,powerPreference:s.software?"low-power":"high-performance",alpha:!1,preserveDrawingBuffer:!!s.preserve});r.setPixelRatio(this.dpr),r.setClearColor(66314,1),this.renderer=r,t.appendChild(r.domElement),r.domElement.className="gl",this.scene=new Cs,this.camera=new Fe(50,1,5,2e5),this.camera.up.set(0,0,1),this.camera.position.set(1400,-6200,4300),this.controls=new yo(this.camera,r.domElement),Object.assign(this.controls,{enableDamping:!0,dampingFactor:.08,rotateSpeed:.6,zoomSpeed:.9,minDistance:60,maxDistance:16e3,autoRotate:!0,autoRotateSpeed:.18}),this.controls.addEventListener("start",()=>{this.userBusy=!0,this.cancelFly(),this.opts.onInteract&&this.opts.onInteract()}),this.controls.addEventListener("end",()=>{this.userBusy=!1}),this.build(),this.labels=new Map,this.resize(),window.addEventListener("resize",()=>this.resize()),this.bindPick(),this.lastT=performance.now(),this.loop=this.loop.bind(this),requestAnimationFrame(this.loop)}build(){let t=this.s,e=t.nodes.length,n=this.scene;this.sky=new Ce(new Bs(9e4,32,24),new re({vertexShader:_u,fragmentShader:xu,side:Re,depthWrite:!1})),n.add(this.sky);let s=this.opts.software?1200:this.mobile?4e3:8e3,r=new Float32Array(s*3),a=new Float32Array(s),o=new Float32Array(s*3),l=new Float32Array(s);for(let A=0;A<s;A++){let U=zn(A*3.1)*2-1,X=zn(A*7.7)*Math.PI*2,G=4e4+zn(A*1.3)*3e4,tt=Math.sqrt(1-U*U);r.set([G*tt*Math.cos(X),G*tt*Math.sin(X),G*U],A*3);let q=zn(A*5.5);a[A]=1.2+Math.pow(q,6)*3.2;let K=zn(A*9.1),Q=K<.2?[.75,.85,1]:K<.3?[1,.85,.7]:[.9,.92,1],bt=.25+Math.pow(q,3)*.9;o.set([Q[0]*bt,Q[1]*bt,Q[2]*bt],A*3),l[A]=zn(A*2.2)}let c=new pe;c.setAttribute("position",new le(r,3)),c.setAttribute("aSize",new le(a,1)),c.setAttribute("aColor",new le(o,3)),c.setAttribute("aPhase",new le(l,1)),this.starMat=new re({vertexShader:mu,fragmentShader:gu,uniforms:{uTime:{value:0},uPx:{value:this.dpr}},blending:Ke,depthWrite:!1,depthTest:!1,transparent:!0});let u=new Ns(c,this.starMat);u.frustumCulled=!1,n.add(u);let f={};for(let A of t.nodes){let U=A.sec;f[U]=f[U]||[0,0,0,0],f[U][0]+=A.x,f[U][1]+=-A.y,f[U][2]+=A.z,f[U][3]++}this.sectorAnchors=[];for(let A of t.sectors){let U=f[A.id];if(!U)continue;let X=new L(U[0]/U[3],U[1]/U[3],U[2]/U[3]),G=Su([[0,A.color+"55"],[.4,A.color+"18"],[1,A.color+"00"]]),tt=new pi(new Zn({map:G,blending:Ke,depthWrite:!1,depthTest:!1,transparent:!0,opacity:.55}));tt.position.copy(X);let q=1300+Math.sqrt(A.n)*70;tt.scale.set(q,q,1),n.add(tt);let K=(A.a0+A.a1)/2,Q=A.r1*.92;this.sectorAnchors.push({sec:A,center:X,label:new L(Math.cos(K)*Q,-Math.sin(K)*Q,0)})}let h=new pi(new Zn({map:Su([[0,"rgba(255,236,170,0.6)"],[.25,"rgba(180,160,255,0.22)"],[1,"rgba(0,0,0,0)"]]),blending:Ke,depthWrite:!1,depthTest:!1,transparent:!0}));h.scale.set(2600,2600,1),n.add(h);let m=F_();this.rings=[];for(let A of["xrp","ripple","rlusd","xrpl"]){let U=t.idx.get(A);if(U===void 0)continue;let X=new Zn({map:m,blending:Ke,depthWrite:!1,depthTest:!1,transparent:!0,opacity:A==="rlusd"||A==="ripple"?.9:.6}),G=new pi(X);G.position.copy(U_(t.nodes[U]));let tt=A==="xrpl"?150:200;G.scale.set(tt,tt,1),n.add(G),this.rings.push(G)}let _=new ks;_.setAttribute("position",new le(new Float32Array([-.5,-.5,0,.5,-.5,0,.5,.5,0,-.5,.5,0]),3)),_.setIndex([0,1,2,0,2,3]);let y=new Float32Array(e*3),g=new Float32Array(e*3),d=new Float32Array(e),w=new Float32Array(e),P=new Float32Array(e);for(let A of t.nodes){let U=A.i;y.set([A.x,-A.y,A.z],U*3);let X=pr(fr[A.type]||"#ffffff"),G=cc.includes(A.id)||A.id==="rlusd"?2.2:1.55;(A.id==="rlusd"||A.id==="ripple"||A.id==="xrp")&&(X[0]=1,X[1]=.82,X[2]=.36),g.set([X[0]*G,X[1]*G,X[2]*G],U*3),d[U]=5+Math.pow(A.deg,.42)*3.2,P[U]=zn(U)}this.iState=new Dn(w,1),this.iState.setUsage(ho),_.setAttribute("iPos",this.nodeAttr=new Dn(y,3)),_.setAttribute("iColor",new Dn(g,3)),_.setAttribute("iSize",new Dn(d,1)),_.setAttribute("iState",this.iState),_.setAttribute("iSeed",new Dn(P,1)),_.instanceCount=e,this.nodeMat=new re({vertexShader:uu,fragmentShader:du,blending:Ke,depthWrite:!1,depthTest:!1,transparent:!0,uniforms:{uScale:{value:1e3},uRes:{value:new _t(1,1)},uTime:{value:0},uFocus:{value:0},uPx:{value:this.dpr}}});let S=new Ce(_,this.nodeMat);S.frustumCulled=!1,S.renderOrder=2,n.add(S),this.nodePos=y,this.nodeSize=d;let M=t.edges.length,T=new Float32Array(M*6),C=new Float32Array(M*6),v=new Float32Array(M*6),E=new Float32Array(M*2),N=new Float32Array(M*2),F=Object.fromEntries(Object.entries(fr).map(([A,U])=>[A,pr(U)]));for(let A of t.edges){if(A.bad)continue;let U=A.j,X=t.nodes[A.a],G=t.nodes[A.b];T.set([X.x,-X.y,X.z,G.x,-G.y,G.z],U*6);let tt=F[X.type]||[1,1,1],q=F[G.type]||[1,1,1],K=.55+(A.strength||2)*.12;C.set([tt[0]*K,tt[1]*K,tt[2]*K,q[0]*K,q[1]*K,q[2]*K],U*6);let Q=pr(lc[A.grade]||"#ffffff");v.set([...Q,...Q],U*6),N.set([0,1],U*2)}let V=new pe;V.setAttribute("position",this.edgeAttr=new le(T,3)),this.edgePos=T,V.setAttribute("aColor",new le(C,3)),V.setAttribute("aHi",new le(v,3)),this.eState=new le(E,1),this.eState.setUsage(ho),V.setAttribute("aState",this.eState),V.setAttribute("aT",new le(N,1)),this.edgeMat=new re({vertexShader:fu,fragmentShader:pu,blending:Ke,depthWrite:!1,depthTest:!1,transparent:!0,uniforms:{uBase:{value:.06},uFocus:{value:0},uTime:{value:0}}});let H=new Ds(V,this.edgeMat);H.frustumCulled=!1,H.renderOrder=1,n.add(H),this.pathGroup=new Pn,n.add(this.pathGroup),this.composer=new Mo(this.renderer),this.composer.addPass(new bo(this.scene,this.camera)),this.bloom=new cs(new _t(256,256),this.mobile?.55:.75,.55,.18),this.composer.addPass(this.bloom),this.post=new ls(vu),this.mobile||this.composer.addPass(this.post),this.composer.addPass(new To)}resize(){let t=this.host.clientWidth||innerWidth,e=this.host.clientHeight||innerHeight;this.w=t,this.h=e,this.renderer.setPixelRatio(this.dpr),this.renderer.setSize(t,e,!1),this.renderer.domElement.style.width=t+"px",this.renderer.domElement.style.height=e+"px",this.composer.setPixelRatio(this.dpr),this.composer.setSize(t,e),this.mobile&&this.bloom.resolution.set(t/2,e/2),this.camera.aspect=t/e,this.camera.updateProjectionMatrix(),this.nodeMat.uniforms.uRes.value.set(t*this.dpr,e*this.dpr),this.nodeMat.uniforms.uScale.value=e*this.dpr/(Math.tan(this.camera.fov*Math.PI/360)*2),this.nodeMat.uniforms.uPx.value=this.dpr,this.starMat.uniforms.uPx.value=this.dpr}setActive(t){this.active=t,t&&(this.resize(),this.applyVisibility())}applyVisibility(){let t=this.s,e=this.iState.array,n=this.eState.array,s=new Set,r=new Set;if(this.sel>=0){s.add(this.sel);for(let o of t.adj[this.sel])if(t.ve[o]){let l=t.edges[o];r.add(o),s.add(l.a===this.sel?l.b:l.a)}}if(this.group)for(let o of this.group)s.add(o);if(this.groupEdges)for(let o of this.groupEdges)r.add(o);let a=this.sel>=0||!!this.group;for(let o of t.nodes)e[o.i]=!t.vn[o.i]&&(!this.group||!this.group.has(o.i))?-1:o.i===this.sel?2:s.has(o.i)?1:0;for(let o of t.edges){let l=o.bad?-1:r.has(o.j)?1:t.ve[o.j]?0:-1;n[o.j*2]=n[o.j*2+1]=l}this.iState.needsUpdate=!0,this.eState.needsUpdate=!0,this.focusTarget=a?1:0}select(t,e=!0){this.sel=t,this.applyVisibility(),t>=0&&e&&this.flyToNode(t)}setGroup(t,e){this.group=t?new Set(t):null,this.groupEdges=e?new Set(e):null,this.applyVisibility()}nodeVec(t){return new L(this.nodePos[t*3],this.nodePos[t*3+1],this.nodePos[t*3+2])}syncPositions(t){let e=this.nodePos,n=this.s;for(let s of n.nodes){let a=t?t(s):null,o=a?a[0]:s.x,l=a?a[1]:s.y,c=a?a[2]:s.z;e.set([o,-l,c],s.i*3)}this.nodeAttr.needsUpdate=!0;let d=this.edgePos;for(let s of n.edges){if(s.bad)continue;let a=s.a*3,o=s.b*3;d.set([e[a],e[a+1],e[a+2],e[o],e[o+1],e[o+2]],s.j*6)}this.edgeAttr.needsUpdate=!0}flyToNode(t,e){let n=this.nodeVec(t),s=this.s.nodes[t],r=e||Math.min(1400,Math.max(420,260+Math.sqrt(s.deg)*90)),a=this.camera.position.clone().sub(this.controls.target).normalize();return a.z<.25&&(a.z=.35,a.normalize()),this.flyTo(n.clone().add(a.multiplyScalar(r)),n,1600)}flyTo(t,e,n=1800){return this.cancelFly(),new Promise(s=>{if(this.motionOff){this.camera.position.copy(t),this.controls.target.copy(e),this.controls.update(),s(!0);return}this.fly={p0:this.camera.position.clone(),t0v:this.controls.target.clone(),p1:t.clone(),t1v:e.clone(),start:performance.now(),dur:n,res:s}})}cancelFly(){if(this.fly){let t=this.fly.res;this.fly=null,t&&t(!1)}}overview(t=2200){return this.flyTo(new L(1100,-4200,2400),new L(0,0,0),t)}bindPick(){let t=this.renderer.domElement,e=null;t.addEventListener("pointerdown",n=>{e=[n.clientX,n.clientY,n.timeStamp]}),t.addEventListener("pointerup",n=>{if(!e)return;let s=Math.hypot(n.clientX-e[0],n.clientY-e[1]),r=n.timeStamp-e[2];if(e=null,s>22||r>1100)return;let a=t.getBoundingClientRect();this.opts.onPick(this.pick(n.clientX-a.left,n.clientY-a.top))})}pick(t,e){let n=this.s,s=new L,r=this.camera;r.updateMatrixWorld();let a=this.iState.array,o=-1,l=1e9,c=matchMedia("(pointer:coarse)").matches,u=this.nodeMat.uniforms.uScale.value/this.dpr;for(let f=0;f<n.nodes.length;f++){if(a[f]<0)continue;s.set(this.nodePos[f*3],this.nodePos[f*3+1],this.nodePos[f*3+2]);let h=s.clone().applyMatrix4(r.matrixWorldInverse).z*-1;if(h<=1||(s.project(r),s.z>1))continue;let m=(s.x+1)/2*this.w,_=(1-s.y)/2*this.h,y=Math.max(c?34:16,this.nodeSize[f]*u/h*.22),g=Math.hypot(m-t,_-e);g<y&&g/y+h/3e4<l&&(l=g/y+h/3e4,o=f)}return o}setPath(t){for(let e of[...this.pathGroup.children])this.pathGroup.remove(e),e.geometry.dispose(),e.material.dispose();this.pathSegs=[];for(let e of t||[]){let n=this.nodeVec(e.a),s=this.nodeVec(e.b),r=new pe().setFromPoints([n,n.clone()]),a=new qi({color:new Lt(e.color||"#facc15").multiplyScalar(2.2),transparent:!0,opacity:.95,blending:Ke,depthTest:!1,depthWrite:!1}),o=new Yi(r,a);o.renderOrder=3,o.frustumCulled=!1,this.pathGroup.add(o),this.pathSegs.push({line:o,A:n,B:s,t0:performance.now()+(e.delay||0),dur:900})}}setLabelSet(t){this.labelFn=t}updateLabels(){let t=this.s,e=this.camera,n=new L,s=[],r=this.iState.array;if(!this.tourOn&&this.sel<0)for(let l of this.sectorAnchors)s.push({key:"s:"+l.sec.id,pos:l.center,cls:"sl",text:l.sec.title.replace(/\s*\(.*\)/,""),color:l.sec.color});let a=this.labelFn?this.labelFn():[];for(let l of a)(!(r[l.i]<0)||l.force)&&s.push({key:"n:"+l.i,pos:this.nodeVec(l.i),cls:l.cls||"nl",text:l.text||t.nodes[l.i].lbl,color:fr[t.nodes[l.i].type]});let o=new Set;for(let l of s){o.add(l.key);let c=this.labels.get(l.key);if(c||(c=document.createElement("div"),c.className="lab "+l.cls,c.innerHTML=`<i style="background:${l.color};box-shadow:0 0 8px ${l.color}"></i><span></span>`,c.querySelector("span").textContent=l.text,l.cls==="sl"&&(c.style.color=l.color),this.labelsEl.appendChild(c),this.labels.set(l.key,c)),n.copy(l.pos).project(e),n.z>1||Math.abs(n.x)>1.1||Math.abs(n.y)>1.1){c.style.opacity=0;continue}let u=(n.x+1)/2*this.w,f=(1-n.y)/2*this.h,h=e.position.distanceTo(l.pos),m=l.cls==="sl"?Math.min(1,Math.max(0,(h-1800)/2500)):l.cls==="nl"?Math.min(1,Math.max(.25,1-(h-3500)/6e3)):1;c.style.opacity=m,c.style.transform=`translate(${u.toFixed(1)}px,${f.toFixed(1)}px)`}for(let[l,c]of this.labels)o.has(l)||(c.remove(),this.labels.delete(l))}screenPos(t){let e=this.nodeVec(t).project(this.camera);return e.z>1?null:[(e.x+1)/2*this.w,(1-e.y)/2*this.h]}loop(){requestAnimationFrame(this.loop);let t=performance.now(),e=Math.min(.1,(t-this.lastT)/1e3);if(this.lastT=t,!this.active)return;let n=performance.now(),s=n/1e3;for(this.frames.push(n);this.frames.length&&n-this.frames[0]>1e3;)this.frames.shift();if(this.fps=this.frames.length,this.started&&n-(this.lastQ||this.started)>3500&&(this.lastQ=n,this.fps<40&&this.bloomOn?(this.bloom.enabled=!1,this.bloomOn=!1):this.fps<28&&this.dpr>1&&(this.dpr=1,this.resize())),this.started||(this.started=n),this.fly){let o=this.fly,l=Math.min(1,(n-o.start)/o.dur),c=Ao(l),u=Math.sin(l*Math.PI)*o.p0.distanceTo(o.p1)*.12;if(this.camera.position.lerpVectors(o.p0,o.p1,c),this.camera.position.z+=u,this.controls.target.lerpVectors(o.t0v,o.t1v,c),l>=1){let f=o.res;this.fly=null,f(!0)}}this.controls.autoRotate=!this.motionOff&&!this.userBusy&&!this.fly&&this.sel<0&&!this.tourOn&&!this.group,this.controls.update(e);let r=this.nodeMat.uniforms.uFocus;this.motionOff?r.value=this.focusTarget||0:r.value+=((this.focusTarget||0)-r.value)*Math.min(1,e*5),this.edgeMat.uniforms.uFocus.value=r.value;if(!this.motionOff){for(let o of[this.nodeMat,this.edgeMat,this.starMat])o.uniforms.uTime.value=s;this.post.uniforms.uTime.value=s}let a=this.camera.position.distanceTo(this.controls.target);if(this.edgeMat.uniforms.uBase.value=(a<2500?.14:a<5e3?.085:a<9e3?.045:.03)*(this.lineMul??1),!this.motionOff&&this.rings.forEach((o,l)=>{o.material.rotation=s*(l%2?-.25:.2)}),this.pathSegs)for(let o of this.pathSegs){let l=Math.min(1,Math.max(0,(n-o.t0)/o.dur)),c=o.line.geometry.attributes.position,u=o.A.clone().lerp(o.B,Ao(l));c.setXYZ(1,u.x,u.y,u.z),c.needsUpdate=!0}this.directRender?this.renderer.render(this.scene,this.camera):this.bloomOn?this.composer.render():(this.composer.passes[1].enabled=!1,this.composer.render()),this.updateLabels(),this.opts.onFrame&&this.opts.onFrame()}}});O_();export{Mu as Space,U_ as W3,U_ as toWorld3};
++    col += (h(vUv*1000.0+fract(uTime)*91.0)-0.5)*0.012; gl_FragColor = vec4(col,1.0); }`}});function Su(i){let t=document.createElement("canvas");t.width=t.height=128;let e=t.getContext("2d"),n=e.createRadialGradient(64,64,0,64,64,64);i.forEach(([r,a])=>n.addColorStop(r,a)),e.fillStyle=n,e.fillRect(0,0,128,128);let s=new Zi(t);return s.colorSpace=Ue,s}function F_(){let i=document.createElement("canvas");i.width=i.height=256;let t=i.getContext("2d");t.strokeStyle="rgba(250,214,110,0.9)",t.lineWidth=3,t.beginPath(),t.arc(128,128,110,.2,Math.PI*1.35),t.stroke(),t.strokeStyle="rgba(250,214,110,0.45)",t.lineWidth=2,t.beginPath(),t.arc(128,128,122,Math.PI*1.5,Math.PI*2.3),t.stroke(),t.setLineDash([2,10]),t.strokeStyle="rgba(250,214,110,0.6)",t.beginPath(),t.arc(128,128,96,0,Math.PI*2),t.stroke();let e=new Zi(i);return e.colorSpace=Ue,e}var U_,Mu,O_=ze(()=>{bn();nu();su();ru();lu();$l();hu();Pu();Iu();yu();U_=i=>new L(i.x,-i.y,i.z);Mu=class{constructor(t,e,n,s){this.host=t,this.labelsEl=e,this.s=n,this.opts=s,this.mobile=matchMedia("(pointer:coarse)").matches||innerWidth<820,this.dprCap=this.mobile?1.5:2,this.dpr=Math.min(window.devicePixelRatio||1,this.dprCap),this.bloomOn=!0,this.sel=-1,this.active=!1,this.frames=[],this.fps=0;let r=new go({antialias:!s.software,powerPreference:s.software?"low-power":"high-performance",alpha:!1,preserveDrawingBuffer:!!s.preserve});r.setPixelRatio(this.dpr),r.setClearColor(66314,1),this.renderer=r,t.appendChild(r.domElement),r.domElement.className="gl",this.scene=new Cs,this.camera=new Fe(50,1,5,2e5),this.camera.up.set(0,0,1),this.camera.position.set(1400,-6200,4300),this.controls=new yo(this.camera,r.domElement),Object.assign(this.controls,{enableDamping:!0,dampingFactor:.08,rotateSpeed:.6,zoomSpeed:.9,minDistance:60,maxDistance:16e3,autoRotate:!0,autoRotateSpeed:.18}),this.controls.addEventListener("start",()=>{this.userBusy=!0,this.cancelFly(),this.opts.onInteract&&this.opts.onInteract()}),this.controls.addEventListener("end",()=>{this.userBusy=!1}),this.build(),this.labels=new Map,this.resize(),window.addEventListener("resize",()=>this.resize()),this.bindPick(),this.lastT=performance.now(),this.loop=this.loop.bind(this),requestAnimationFrame(this.loop)}build(){let t=this.s,e=t.nodes.length,n=this.scene;this.sky=new Ce(new Bs(9e4,32,24),new re({vertexShader:_u,fragmentShader:xu,side:Re,depthWrite:!1})),n.add(this.sky);let s=this.opts.software?1200:this.mobile?4e3:8e3,r=new Float32Array(s*3),a=new Float32Array(s),o=new Float32Array(s*3),l=new Float32Array(s);for(let A=0;A<s;A++){let U=zn(A*3.1)*2-1,X=zn(A*7.7)*Math.PI*2,G=4e4+zn(A*1.3)*3e4,tt=Math.sqrt(1-U*U);r.set([G*tt*Math.cos(X),G*tt*Math.sin(X),G*U],A*3);let q=zn(A*5.5);a[A]=1.2+Math.pow(q,6)*3.2;let K=zn(A*9.1),Q=K<.2?[.75,.85,1]:K<.3?[1,.85,.7]:[.9,.92,1],bt=.25+Math.pow(q,3)*.9;o.set([Q[0]*bt,Q[1]*bt,Q[2]*bt],A*3),l[A]=zn(A*2.2)}let c=new pe;c.setAttribute("position",new le(r,3)),c.setAttribute("aSize",new le(a,1)),c.setAttribute("aColor",new le(o,3)),c.setAttribute("aPhase",new le(l,1)),this.starMat=new re({vertexShader:mu,fragmentShader:gu,uniforms:{uTime:{value:0},uPx:{value:this.dpr}},blending:Ke,depthWrite:!1,depthTest:!1,transparent:!0});let u=new Ns(c,this.starMat);u.frustumCulled=!1,n.add(u);let f={};for(let A of t.nodes){let U=A.sec;f[U]=f[U]||[0,0,0,0],f[U][0]+=A.x,f[U][1]+=-A.y,f[U][2]+=A.z,f[U][3]++}this.sectorAnchors=[];for(let A of t.sectors){let U=f[A.id];if(!U)continue;let X=new L(U[0]/U[3],U[1]/U[3],U[2]/U[3]),G=Su([[0,A.color+"55"],[.4,A.color+"18"],[1,A.color+"00"]]),tt=new pi(new Zn({map:G,blending:Ke,depthWrite:!1,depthTest:!1,transparent:!0,opacity:.55}));tt.position.copy(X);let q=1300+Math.sqrt(A.n)*70;tt.scale.set(q,q,1),n.add(tt);let K=(A.a0+A.a1)/2,Q=A.r1*.92;this.sectorAnchors.push({sec:A,center:X,label:new L(Math.cos(K)*Q,-Math.sin(K)*Q,0)})}let h=new pi(new Zn({map:Su([[0,"rgba(255,236,170,0.6)"],[.25,"rgba(180,160,255,0.22)"],[1,"rgba(0,0,0,0)"]]),blending:Ke,depthWrite:!1,depthTest:!1,transparent:!0}));h.scale.set(2600,2600,1),n.add(h);let m=F_();this.rings=[];for(let A of["xrp","ripple","rlusd","xrpl"]){let U=t.idx.get(A);if(U===void 0)continue;let X=new Zn({map:m,blending:Ke,depthWrite:!1,depthTest:!1,transparent:!0,opacity:A==="rlusd"||A==="ripple"?.9:.6}),G=new pi(X);G.position.copy(U_(t.nodes[U]));let tt=A==="xrpl"?150:200;G.scale.set(tt,tt,1),n.add(G),this.rings.push(G)}let _=new ks;_.setAttribute("position",new le(new Float32Array([-.5,-.5,0,.5,-.5,0,.5,.5,0,-.5,.5,0]),3)),_.setIndex([0,1,2,0,2,3]);let y=new Float32Array(e*3),g=new Float32Array(e*3),d=new Float32Array(e),w=new Float32Array(e),P=new Float32Array(e);for(let A of t.nodes){let U=A.i;y.set([A.x,-A.y,A.z],U*3);let X=pr(fr[A.type]||"#ffffff"),G=cc.includes(A.id)||A.id==="rlusd"?2.2:1.55;(A.id==="rlusd"||A.id==="ripple"||A.id==="xrp")&&(X[0]=1,X[1]=.82,X[2]=.36),g.set([X[0]*G,X[1]*G,X[2]*G],U*3),d[U]=5+Math.pow(A.deg,.42)*3.2,P[U]=zn(U)}this.iState=new Dn(w,1),this.iState.setUsage(ho),_.setAttribute("iPos",this.nodeAttr=new Dn(y,3)),_.setAttribute("iColor",new Dn(g,3)),_.setAttribute("iSize",new Dn(d,1)),_.setAttribute("iState",this.iState),_.setAttribute("iSeed",new Dn(P,1)),_.instanceCount=e,this.nodeMat=new re({vertexShader:uu,fragmentShader:du,blending:Ke,depthWrite:!1,depthTest:!1,transparent:!0,uniforms:{uScale:{value:1e3},uRes:{value:new _t(1,1)},uTime:{value:0},uFocus:{value:0},uPx:{value:this.dpr}}});let S=new Ce(_,this.nodeMat);S.frustumCulled=!1,S.renderOrder=2,n.add(S),this.nodePos=y,this.nodeSize=d;let M=t.edges.length,T=new Float32Array(M*6),C=new Float32Array(M*6),v=new Float32Array(M*6),E=new Float32Array(M*2),N=new Float32Array(M*2),F=Object.fromEntries(Object.entries(fr).map(([A,U])=>[A,pr(U)]));for(let A of t.edges){if(A.bad)continue;let U=A.j,X=t.nodes[A.a],G=t.nodes[A.b];T.set([X.x,-X.y,X.z,G.x,-G.y,G.z],U*6);let tt=F[X.type]||[1,1,1],q=F[G.type]||[1,1,1],K=.55+(A.strength||2)*.12;C.set([tt[0]*K,tt[1]*K,tt[2]*K,q[0]*K,q[1]*K,q[2]*K],U*6);let Q=pr(lc[A.grade]||"#ffffff");v.set([...Q,...Q],U*6),N.set([0,1],U*2)}let V=new pe;V.setAttribute("position",this.edgeAttr=new le(T,3)),this.edgePos=T,V.setAttribute("aColor",new le(C,3)),V.setAttribute("aHi",new le(v,3)),this.eState=new le(E,1),this.eState.setUsage(ho),V.setAttribute("aState",this.eState),V.setAttribute("aT",new le(N,1)),this.edgeMat=new re({vertexShader:fu,fragmentShader:pu,blending:Ke,depthWrite:!1,depthTest:!1,transparent:!0,uniforms:{uBase:{value:.06},uFocus:{value:0},uTime:{value:0}}});let H=new Ds(V,this.edgeMat);H.frustumCulled=!1,H.renderOrder=1,n.add(H),this.pathGroup=new Pn,n.add(this.pathGroup),this.composer=new Mo(this.renderer),this.composer.addPass(new bo(this.scene,this.camera)),this.bloom=new cs(new _t(256,256),this.mobile?.55:.75,.55,.18),this.composer.addPass(this.bloom),this.post=new ls(vu),this.mobile||this.composer.addPass(this.post),this.composer.addPass(new To)}resize(){let t=this.host.clientWidth||innerWidth,e=this.host.clientHeight||innerHeight;this.w=t,this.h=e,this.renderer.setPixelRatio(this.dpr),this.renderer.setSize(t,e,!1),this.renderer.domElement.style.width=t+"px",this.renderer.domElement.style.height=e+"px",this.composer.setPixelRatio(this.dpr),this.composer.setSize(t,e),this.mobile&&this.bloom.resolution.set(t/2,e/2),this.camera.aspect=t/e,this.camera.updateProjectionMatrix(),this.nodeMat.uniforms.uRes.value.set(t*this.dpr,e*this.dpr),this.nodeMat.uniforms.uScale.value=e*this.dpr/(Math.tan(this.camera.fov*Math.PI/360)*2),this.nodeMat.uniforms.uPx.value=this.dpr,this.starMat.uniforms.uPx.value=this.dpr}setActive(t){this.active=t,t&&(this.resize(),this.applyVisibility())}applyVisibility(){let t=this.s,e=this.iState.array,n=this.eState.array,s=new Set,r=new Set;if(this.sel>=0){s.add(this.sel);for(let o of t.adj[this.sel])if(t.ve[o]){let l=t.edges[o];r.add(o),s.add(l.a===this.sel?l.b:l.a)}}if(this.group)for(let o of this.group)s.add(o);if(this.groupEdges)for(let o of this.groupEdges)r.add(o);let a=this.sel>=0||!!this.group;for(let o of t.nodes)e[o.i]=!t.vn[o.i]&&(!this.group||!this.group.has(o.i))?-1:o.i===this.sel?2:s.has(o.i)?1:0;for(let o of t.edges){let l=o.bad?-1:r.has(o.j)?1:t.ve[o.j]?0:-1;n[o.j*2]=n[o.j*2+1]=l}this.iState.needsUpdate=!0,this.eState.needsUpdate=!0,this.focusTarget=a?1:0}select(t,e=!0){this.sel=t,this.applyVisibility(),t>=0&&e&&this.flyToNode(t)}setGroup(t,e){this.group=t?new Set(t):null,this.groupEdges=e?new Set(e):null,this.applyVisibility()}nodeVec(t){return new L(this.nodePos[t*3],this.nodePos[t*3+1],this.nodePos[t*3+2])}syncPositions(t){let e=this.nodePos,n=this.s;for(let s of n.nodes){let a=t?t(s):null,o=a?a[0]:s.x,l=a?a[1]:s.y,c=a?a[2]:s.z;e.set([o,-l,c],s.i*3)}this.nodeAttr.needsUpdate=!0;let d=this.edgePos;for(let s of n.edges){if(s.bad)continue;let a=s.a*3,o=s.b*3;d.set([e[a],e[a+1],e[a+2],e[o],e[o+1],e[o+2]],s.j*6)}this.edgeAttr.needsUpdate=!0}flyToNode(t,e){let n=this.nodeVec(t),s=this.s.nodes[t],r=e||Math.min(1400,Math.max(420,260+Math.sqrt(s.deg)*90)),a=this.camera.position.clone().sub(this.controls.target).normalize();return a.z<.25&&(a.z=.35,a.normalize()),this.flyTo(n.clone().add(a.multiplyScalar(r)),n,1600)}flyTo(t,e,n=1800){return this.cancelFly(),new Promise(s=>{if(this.motionOff){this.camera.position.copy(t),this.controls.target.copy(e),this.controls.update(),s(!0);return}this.fly={p0:this.camera.position.clone(),t0v:this.controls.target.clone(),p1:t.clone(),t1v:e.clone(),start:performance.now(),dur:n,res:s}})}cancelFly(){if(this.fly){let t=this.fly.res;this.fly=null,t&&t(!1)}}overview(t=2200){return this.flyTo(new L(1100,-4200,2400),new L(0,0,0),t)}bindPick(){let t=this.renderer.domElement,e=null;t.addEventListener("pointerdown",n=>{e=[n.clientX,n.clientY,n.timeStamp]}),t.addEventListener("pointerup",n=>{if(!e)return;let s=Math.hypot(n.clientX-e[0],n.clientY-e[1]),r=n.timeStamp-e[2];if(e=null,s>22||r>1100)return;let a=t.getBoundingClientRect();this.opts.onPick(this.pick(n.clientX-a.left,n.clientY-a.top))})}pick(t,e){let n=this.s,s=new L,r=this.camera;r.updateMatrixWorld();let a=this.iState.array,o=-1,l=1e9,c=matchMedia("(pointer:coarse)").matches,u=this.nodeMat.uniforms.uScale.value/this.dpr;for(let f=0;f<n.nodes.length;f++){if(a[f]<0)continue;s.set(this.nodePos[f*3],this.nodePos[f*3+1],this.nodePos[f*3+2]);let h=s.clone().applyMatrix4(r.matrixWorldInverse).z*-1;if(h<=1||(s.project(r),s.z>1))continue;let m=(s.x+1)/2*this.w,_=(1-s.y)/2*this.h,y=Math.max(c?34:16,this.nodeSize[f]*u/h*.22),g=Math.hypot(m-t,_-e);g<y&&g/y+h/3e4<l&&(l=g/y+h/3e4,o=f)}return o}setPath(t){for(let e of[...this.pathGroup.children])this.pathGroup.remove(e),e.geometry.dispose(),e.material.dispose();this.pathSegs=[];for(let e of t||[]){let n=this.nodeVec(e.a),s=this.nodeVec(e.b),r=new pe().setFromPoints([n,n.clone()]),a=new qi({color:new Lt(e.color||"#facc15").multiplyScalar(2.2),transparent:!0,opacity:.95,blending:Ke,depthTest:!1,depthWrite:!1}),o=new Yi(r,a);o.renderOrder=3,o.frustumCulled=!1,this.pathGroup.add(o),this.pathSegs.push({line:o,A:n,B:s,t0:performance.now()+(e.delay||0),dur:900})}}setLabelSet(t){this.labelFn=t}updateLabels(){let t=this.s,e=this.camera,n=new L,s=[],r=this.iState.array;if(!this.tourOn&&this.sel<0)for(let l of this.sectorAnchors)s.push({key:"s:"+l.sec.id,pos:l.center,cls:"sl",text:l.sec.title.replace(/\s*\(.*\)/,""),color:l.sec.color});let a=this.labelFn?this.labelFn():[];for(let l of a)(!(r[l.i]<0)||l.force)&&s.push({key:"n:"+l.i,pos:this.nodeVec(l.i),cls:l.cls||"nl",text:l.text||t.nodes[l.i].lbl,color:fr[t.nodes[l.i].type]});let o=new Set;for(let l of s){o.add(l.key);let c=this.labels.get(l.key);if(c||(c=document.createElement("div"),c.className="lab "+l.cls,c.innerHTML=`<i style="background:${l.color};box-shadow:0 0 8px ${l.color}"></i><span></span>`,c.querySelector("span").textContent=l.text,l.cls==="sl"&&(c.style.color=l.color),this.labelsEl.appendChild(c),this.labels.set(l.key,c)),n.copy(l.pos).project(e),n.z>1||Math.abs(n.x)>1.1||Math.abs(n.y)>1.1){c.style.opacity=0;continue}let u=(n.x+1)/2*this.w,f=(1-n.y)/2*this.h,h=e.position.distanceTo(l.pos),m=l.cls==="sl"?Math.min(1,Math.max(0,(h-1800)/2500)):l.cls==="nl"?Math.min(1,Math.max(.25,1-(h-3500)/6e3)):1;c.style.opacity=m,c.style.transform=`translate(${u.toFixed(1)}px,${f.toFixed(1)}px)`}for(let[l,c]of this.labels)o.has(l)||(c.remove(),this.labels.delete(l))}screenPos(t){let e=this.nodeVec(t).project(this.camera);return e.z>1?null:[(e.x+1)/2*this.w,(1-e.y)/2*this.h]}loop(){requestAnimationFrame(this.loop);let t=performance.now(),e=Math.min(.1,(t-this.lastT)/1e3);if(this.lastT=t,!this.active)return;let n=performance.now(),s=n/1e3;for(this.frames.push(n);this.frames.length&&n-this.frames[0]>1e3;)this.frames.shift();if(this.fps=this.frames.length,this.started&&n-(this.lastQ||this.started)>3500&&(this.lastQ=n,this.fps<40&&this.bloomOn?(this.bloom.enabled=!1,this.bloomOn=!1):this.fps<28&&this.dpr>1&&(this.dpr=1,this.resize())),this.started||(this.started=n),this.fly){let o=this.fly,l=Math.min(1,(n-o.start)/o.dur),c=l,u=Math.sin(l*Math.PI)*o.p0.distanceTo(o.p1)*.03;if(this.camera.position.lerpVectors(o.p0,o.p1,c),this.camera.position.z+=u,this.controls.target.lerpVectors(o.t0v,o.t1v,c),l>=1){let f=o.res;this.fly=null,f(!0)}}this.controls.autoRotate=!this.motionOff&&!this.userBusy&&!this.fly&&this.sel<0&&!this.tourOn&&!this.group,this.controls.update(e);let r=this.nodeMat.uniforms.uFocus;this.motionOff?r.value=this.focusTarget||0:r.value+=((this.focusTarget||0)-r.value)*Math.min(1,e*5),this.edgeMat.uniforms.uFocus.value=r.value;if(!this.motionOff){for(let o of[this.nodeMat,this.edgeMat,this.starMat])o.uniforms.uTime.value=s;this.post.uniforms.uTime.value=s}let a=this.camera.position.distanceTo(this.controls.target);if(this.edgeMat.uniforms.uBase.value=(a<2500?.48:a<5e3?.34:a<9e3?.24:.18)*(this.lineMul??1),!this.motionOff&&this.rings.forEach((o,l)=>{o.material.rotation=s*(l%2?-.25:.2)}),this.pathSegs)for(let o of this.pathSegs){let l=Math.min(1,Math.max(0,(n-o.t0)/o.dur)),c=o.line.geometry.attributes.position,u=o.A.clone().lerp(o.B,Ao(l));c.setXYZ(1,u.x,u.y,u.z),c.needsUpdate=!0}this.directRender?this.renderer.render(this.scene,this.camera):this.bloomOn?this.composer.render():(this.composer.passes[1].enabled=!1,this.composer.render()),this.updateLabels(),this.opts.onFrame&&this.opts.onFrame()}}});O_();export{Mu as Space,U_ as W3,U_ as toWorld3};
  /*! Bundled license information:
  
  three/build/three.core.js:
@@ -2063,10 +2113,11 @@ diff -ruN a/space/qa/touch.mjs b/space/qa/touch.mjs
 +console.log("\nTOUCH TASKS PASSED");
 diff -ruN a/space/qa/tour-fly.mjs b/space/qa/tour-fly.mjs
 --- a/space/qa/tour-fly.mjs	1970-01-01 00:00:00.000000000 +0000
-+++ b/space/qa/tour-fly.mjs	2026-11-11 17:24:54.776225152 +0000
-@@ -0,0 +1,67 @@
++++ b/space/qa/tour-fly.mjs	2026-11-11 17:36:13.278458151 +0000
+@@ -0,0 +1,142 @@
 +/**
-+ * Records a real camera fly on the live WebGL view.
++ * Uninterrupted normal-motion tour. Does not press Pause.
++ * A second context checks reduced motion separately.
 + *   node qa/tour-fly.mjs http://127.0.0.1:8766
 + */
 +import { mkdirSync } from "node:fs";
@@ -2074,61 +2125,135 @@ diff -ruN a/space/qa/tour-fly.mjs b/space/qa/tour-fly.mjs
 +
 +const base = process.argv[2] || "http://127.0.0.1:8766";
 +const chrome = process.env.CHROME || "/usr/local/bin/google-chrome";
-+const out = process.env.SHOTS || "/tmp/tour-fly";
++const out = process.env.SHOTS || "/tmp/tour-fly3";
 +mkdirSync(out, { recursive: true });
++mkdirSync(`${out}/frames`, { recursive: true });
 +
 +const browser = await chromium.launch({
 +  executablePath: chrome,
 +  headless: true,
 +  args: ["--use-gl=angle", "--use-angle=swiftshader", "--enable-unsafe-swiftshader", "--ignore-gpu-blocklist"],
 +});
++
 +const context = await browser.newContext({
 +  viewport: { width: 1280, height: 800 },
-+  deviceScaleFactor: 2,
++  deviceScaleFactor: 1,
++  reducedMotion: "no-preference",
 +  recordVideo: { dir: out, size: { width: 1280, height: 800 } },
 +});
 +const page = await context.newPage();
 +await page.goto(`${base}/`, { waitUntil: "domcontentloaded" });
 +await page.waitForFunction(() => window.__spacePreview && window.__spacePreview.ready, null, { timeout: 30000 });
-+await page.waitForTimeout(600);
-+const draw = await page.evaluate(() => window.__spacePreview.draw);
-+console.log("DRAW", JSON.stringify(draw));
-+await page.screenshot({ path: `${out}/desktop-home.png` });
-+const start = await page.evaluate(() => window.__spacePreview.engine.camera.position.toArray());
++await page.waitForTimeout(500);
++const startState = await page.evaluate(() => ({
++  pause: document.querySelector("#pauseBtn").textContent,
++  pressed: document.querySelector("#pauseBtn").getAttribute("aria-pressed"),
++  reduced: matchMedia("(prefers-reduced-motion: reduce)").matches,
++  motionOff: window.__spacePreview.motionOff,
++  draw: window.__spacePreview.draw,
++}));
++console.log("START", JSON.stringify(startState));
++if (startState.reduced || startState.motionOff || startState.pause !== "Pause") {
++  console.error("FAIL normal-motion recording started paused or reduced");
++  process.exit(1);
++}
++
++const phone = await browser.newContext({
++  viewport: { width: 440, height: 956 },
++  deviceScaleFactor: 2,
++  isMobile: true,
++  hasTouch: true,
++  reducedMotion: "no-preference",
++});
++const phonePage = await phone.newPage();
++await phonePage.goto(`${base}/`, { waitUntil: "domcontentloaded" });
++await phonePage.waitForFunction(() => window.__spacePreview && window.__spacePreview.ready, null, { timeout: 30000 });
++await phonePage.waitForTimeout(800);
++const phoneDraw = await phonePage.evaluate(() => window.__spacePreview.draw);
++console.log("PHONE_DRAW", JSON.stringify(phoneDraw));
++await phonePage.screenshot({ path: `${out}/phone-edges.png` });
++await phone.close();
++
++await page.screenshot({ path: `${out}/desktop-before-tour.png` });
 +await page.click("#tourBtn");
 +await page.click("#tourList button:nth-child(2)");
-+const samples = [start];
-+for (let i = 0; i < 8; i++) {
++const samples = [];
++const t0 = Date.now();
++let lastStep = "";
++const legs = [];
++while (Date.now() - t0 < 24000) {
++  const snap = await page.evaluate(() => {
++    const space = window.__spacePreview.engine;
++    const p = space.camera.position;
++    const g = space.controls.target;
++    return {
++      step: document.querySelector("#tCount").textContent,
++      cam: [p.x, p.y, p.z],
++      target: [g.x, g.y, g.z],
++      motion: document.querySelector("#tMotion").textContent,
++      pause: document.querySelector("#pauseBtn").textContent,
++    };
++  });
++  const elapsed = Date.now() - t0;
++  samples.push({ t: elapsed, ...snap });
++  if (snap.step !== lastStep) {
++    legs.push({ step: snap.step, t: elapsed, index: samples.length - 1 });
++    lastStep = snap.step;
++  }
++  if (elapsed % 2000 < 280) await page.screenshot({ path: `${out}/frames/t${String(elapsed).padStart(5, "0")}.png` });
 +  await page.waitForTimeout(250);
-+  samples.push(await page.evaluate(() => window.__spacePreview.engine.camera.position.toArray()));
 +}
-+await page.screenshot({ path: `${out}/desktop-tour-mid.png` });
-+const moved = samples.slice(1).map((p) => Math.hypot(p[0] - start[0], p[1] - start[1], p[2] - start[2]));
-+const peak = Math.max(...moved);
-+const mid = moved[2];
-+console.log("PATH", moved.map((n) => Math.round(n)).join(" "));
-+const flying = peak > 80 && mid > 20 && mid < peak * 0.98;
-+console.log(flying ? "PASS camera travels during the tour" : "FAIL camera did not travel", `peak ${Math.round(peak)} mid ${Math.round(mid)}`);
-+await page.click("#tNext");
-+await page.waitForTimeout(700);
-+await page.screenshot({ path: `${out}/desktop-tour-next.png` });
-+await page.click("#pauseBtn");
-+const paused = await page.locator("#pauseBtn").innerText();
-+console.log(paused === "Resume motion" ? "PASS pause can be resumed" : "FAIL pause label", paused);
-+await page.click("#pauseBtn");
-+await page.click("#tStop");
-+const ended = await page.evaluate(() => document.querySelector("#tour").hidden);
-+console.log(ended ? "PASS tour exit" : "FAIL tour still open");
-+await page.click("#homeBtn");
-+await page.waitForTimeout(400);
-+const home = await page.evaluate(() => document.querySelector("#panel").hidden);
-+console.log(home ? "PASS home after tour" : "FAIL home");
-+const video = page.video();
++const moved = (a, b) => Math.hypot(a[0] - b[0], a[1] - b[1], a[2] - b[2]);
++console.log("LEGS", JSON.stringify(legs));
++console.log("SAMPLES", samples.length, "span", samples.at(-1).t);
++let smooth = true;
++for (let i = 0; i < legs.length; i++) {
++  const from = legs[i].index;
++  const to = i + 1 < legs.length ? legs[i + 1].index : samples.length - 1;
++  const leg = samples.slice(from, to + 1);
++  if (leg.length < 4) continue;
++  const total = moved(leg[0].cam, leg.at(-1).cam);
++  let biggest = 0;
++  for (let k = 1; k < leg.length; k++) biggest = Math.max(biggest, moved(leg[k - 1].cam, leg[k].cam));
++  const targetMove = moved(leg[0].target, leg.at(-1).target);
++  console.log(`LEG ${leg[0].step} cam ${Math.round(total)} biggest250 ${Math.round(biggest)} target ${Math.round(targetMove)} n ${leg.length}`);
++  if (total > 200 && biggest > total * 0.45) smooth = false;
++}
++const stepCount = new Set(samples.map((s) => s.step)).size;
++const pausedDuring = samples.some((s) => s.pause !== "Pause" || s.motion.includes("paused"));
++console.log(stepCount >= 3 ? "PASS at least two Next transitions" : "FAIL steps", stepCount);
++console.log(smooth ? "PASS no single sample jumps most of a leg" : "FAIL a leg has an abrupt camera step");
++console.log(pausedDuring ? "FAIL pause appeared during the clip" : "PASS pause was never pressed");
++console.log("MOTION_NOTE", samples.find((s) => s.motion)?.motion || "(empty, motion on)");
++
 +await context.close();
-+if (video) {
-+  const path = await video.path();
-+  console.log("VIDEO", path);
-+}
++const video = page.video();
++if (video) console.log("VIDEO", await video.path());
++
++const reduced = await browser.newContext({
++  viewport: { width: 1280, height: 800 },
++  reducedMotion: "reduce",
++});
++const rpage = await reduced.newPage();
++await rpage.goto(`${base}/`, { waitUntil: "domcontentloaded" });
++await rpage.waitForFunction(() => window.__spacePreview && window.__spacePreview.ready, null, { timeout: 30000 });
++const rstate = await rpage.evaluate(() => ({
++  pause: document.querySelector("#pauseBtn").textContent,
++  reduced: matchMedia("(prefers-reduced-motion: reduce)").matches,
++  motionOff: window.__spacePreview.motionOff,
++}));
++console.log("REDUCED_START", JSON.stringify(rstate));
++await rpage.click("#tourBtn");
++await rpage.click("#tourList button:nth-child(2)");
++await rpage.waitForTimeout(400);
++const jumped = await rpage.evaluate(() => window.__spacePreview.engine.camera.position.toArray());
++await rpage.waitForTimeout(800);
++const held = await rpage.evaluate(() => window.__spacePreview.engine.camera.position.toArray());
++const drift = Math.hypot(held[0] - jumped[0], held[1] - jumped[1], held[2] - jumped[2]);
++console.log("REDUCED_DRIFT", Math.round(drift));
++console.log(rstate.reduced && rstate.motionOff && rstate.pause === "Resume motion" ? "PASS reduced motion starts paused" : "FAIL reduced motion was overridden");
++console.log(drift < 40 ? "PASS reduced motion does not keep animating" : "FAIL reduced motion kept moving");
++await reduced.close();
 +await browser.close();
-+if (!flying || paused !== "Resume motion" || !ended || !home) process.exit(1);
-+console.log("TOUR FLY PASSED");
++if (stepCount < 3 || !smooth || pausedDuring || !rstate.reduced || drift >= 40) process.exit(1);
++console.log("TOUR RECORDING PASSED");
