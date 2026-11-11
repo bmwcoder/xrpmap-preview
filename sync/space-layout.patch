@@ -132,7 +132,7 @@ diff -ruN a/space/css/app.css b/space/css/app.css
  }
 diff -ruN a/space/index.html b/space/index.html
 --- a/space/index.html	2026-11-11 16:02:35.921286940 +0000
-+++ b/space/index.html	2026-11-11 17:35:37.917907302 +0000
++++ b/space/index.html	2026-11-11 17:48:23.740696915 +0000
 @@ -60,13 +60,14 @@
    <button type="button" data-grade="C" aria-pressed="false">C claim</button>
    <button type="button" data-grade="X" aria-pressed="false">X false</button>
@@ -170,7 +170,7 @@ diff -ruN a/space/index.html b/space/index.html
  <footer id="foot">
    <p id="counts" aria-live="polite"></p>
 -  <p><time id="updated"></time> · <span id="dataFrom"></span> · code <span id="code">space-preview-2</span> · <button type="button" id="reloadBtn">Check for a newer graph</button></p>
-+  <p><time id="updated"></time> · <span id="dataFrom"></span> · code <span id="code">space-preview-7</span> · <button type="button" id="reloadBtn">Check for a newer graph</button></p>
++  <p><time id="updated"></time> · <span id="dataFrom"></span> · code <span id="code">space-preview-8</span> · <button type="button" id="reloadBtn">Check for a newer graph</button></p>
    <p id="soft" class="legal" hidden></p>
    <p class="legal">Not investment advice. A line is a connection, not adoption. The author holds XRP. <a href="https://xrpmap.org/">Current map</a>. Unlisted preview, not private.</p>
    <details id="latest">
@@ -193,7 +193,7 @@ diff -ruN a/space/index.html b/space/index.html
  </div>
 diff -ruN a/space/js/app.js b/space/js/app.js
 --- a/space/js/app.js	2026-11-11 16:02:35.921286940 +0000
-+++ b/space/js/app.js	2026-11-11 17:36:03.858306435 +0000
++++ b/space/js/app.js	2026-11-11 17:48:25.648672293 +0000
 @@ -1,14 +1,15 @@
  import {
 -  CENTER_IDS, GRADE_TEXT, GRADES, SIDE_HINT, SIDE_TEXT, SIDES,
@@ -209,11 +209,19 @@ diff -ruN a/space/js/app.js b/space/js/app.js
  const CACHE_REQ = new Request(new URL("./graph-cache.json", document.baseURI));
 -const CODE = "space-preview-2";
 -const PUBLIC_GRAPH = "https://xrpmap.org/graph.json";
-+const CODE = "space-preview-7";
++const CODE = "space-preview-8";
  
  const $ = (sel, root = document) => root.querySelector(sel);
  const $$ = (sel, root = document) => [...root.querySelectorAll(sel)];
-@@ -38,6 +39,17 @@
+@@ -22,6 +23,7 @@
+   tour: null,
+   step: 0,
+   motionOff: false,
++  holdLabels: false,
+   source: "",
+   savedAt: "",
+   loadError: "",
+@@ -38,6 +40,17 @@
    get fps() { return state.space ? state.space.fps : 0; },
    get renderer() { return state.webgl && state.webgl.renderer; },
    get software() { return !!(state.webgl && state.webgl.software); },
@@ -231,7 +239,7 @@ diff -ruN a/space/js/app.js b/space/js/app.js
    get motionOff() { return state.motionOff; },
    get selected() {
      return state.sel >= 0 && state.model ? state.model.nodes[state.sel].id : null;
-@@ -55,9 +67,11 @@
+@@ -55,9 +68,11 @@
    return typeof matchMedia === "function" && matchMedia("(prefers-reduced-motion: reduce)").matches;
  }
  
@@ -244,7 +252,7 @@ diff -ruN a/space/js/app.js b/space/js/app.js
    const top = $("#top")?.getBoundingClientRect().height || 62;
    const filters = $("#filters")?.getBoundingClientRect().height || 46;
    const foot = $("#foot")?.getBoundingClientRect().height || 76;
-@@ -68,7 +82,7 @@
+@@ -68,7 +83,7 @@
  }
  
  async function fetchLive() {
@@ -253,7 +261,7 @@ diff -ruN a/space/js/app.js b/space/js/app.js
    const errors = [];
    for (const href of candidates) {
      try {
-@@ -160,9 +174,11 @@
+@@ -160,9 +175,11 @@
  function paintCounts() {
    const m = state.model;
    $("#counts").textContent = countsText();
@@ -266,7 +274,7 @@ diff -ruN a/space/js/app.js b/space/js/app.js
    const from = $("#dataFrom");
    if (from) {
      if (state.source === "cache") from.textContent = "Showing a copy saved in this browser.";
-@@ -215,6 +231,10 @@
+@@ -215,6 +232,10 @@
    if (index >= 0) {
      renderPanel();
      openPanel();
@@ -277,7 +285,7 @@ diff -ruN a/space/js/app.js b/space/js/app.js
      const id = state.model.nodes[index].id;
      if (reason !== "hash") history.pushState({ node: id }, "", `#node=${encodeURIComponent(id)}`);
    } else {
-@@ -243,6 +263,12 @@
+@@ -243,6 +264,12 @@
    return `<a class="src" href="${escapeHtml(href)}" target="_blank" rel="noopener noreferrer">${escapeHtml(hostOf(href))} ↗</a>`;
  }
  
@@ -290,7 +298,7 @@ diff -ruN a/space/js/app.js b/space/js/app.js
  function gradeMark(grade) {
    const text = GRADE_TEXT[grade] || "Ungraded";
    return `<b class="g g${escapeHtml(grade || "U")}" title="${escapeHtml(text)}">${escapeHtml(grade || "–")}</b> <span>${escapeHtml(text)}</span>`;
-@@ -265,19 +291,25 @@
+@@ -265,19 +292,25 @@
      if (!groups.has(other.type)) groups.set(other.type, []);
      groups.get(other.type).push([edge, other]);
    }
@@ -323,7 +331,7 @@ diff -ruN a/space/js/app.js b/space/js/app.js
        <p>Around this entity, space shows only its real connections, moved nearby so the names can be read. Nothing is added. Home puts every entity back in the galaxy.</p>
      </div>
      ${[...groups.entries()].map(([type, rows]) => `
-@@ -292,7 +324,7 @@
+@@ -292,7 +325,7 @@
          ${rows.length > 6 ? `<button type="button" class="text more-btn">Show ${rows.length - 6} more</button>` : ""}
        </details>`).join("")}
      ${all.length ? "" : '<p class="sum">No connections are stored for this entity.</p>'}
@@ -332,7 +340,7 @@ diff -ruN a/space/js/app.js b/space/js/app.js
    body.scrollTop = 0;
  }
  
-@@ -375,10 +407,44 @@
+@@ -375,10 +408,44 @@
    cz /= pts.length;
    let rad = 80;
    for (const [x, y, z] of pts) rad = Math.max(rad, Math.hypot(x - cx, y - cy, z - cz));
@@ -381,7 +389,16 @@ diff -ruN a/space/js/app.js b/space/js/app.js
  }
  
  function viewMetrics() {
-@@ -449,6 +515,132 @@
+@@ -410,7 +477,7 @@
+   const m = state.model;
+   const out = [];
+   const focus = state.sel;
+-  if (state.tour && focus < 0) {
++  if (state.tour && focus < 0 && !state.holdLabels) {
+     const step = state.tour.steps[state.step];
+     for (const i of step?.group || []) out.push({ i, cls: "nl tag", force: true });
+     if (step?.focus >= 0) out.push({ i: step.focus, cls: "nl sel", force: true });
+@@ -449,6 +516,132 @@
    return out;
  }
  
@@ -514,7 +531,7 @@ diff -ruN a/space/js/app.js b/space/js/app.js
  function webglInfo() {
    try {
      const canvas = document.createElement("canvas");
-@@ -465,20 +657,24 @@
+@@ -465,20 +658,24 @@
  
  function simplifySpace(space) {
    const software = state.webgl.software;
@@ -552,7 +569,7 @@ diff -ruN a/space/js/app.js b/space/js/app.js
  }
  
  async function startSpace() {
-@@ -495,7 +691,10 @@
+@@ -495,7 +692,10 @@
      const { Space } = await import("./space-WZLWI5EC.js");
      const space = new Space($("#space"), $("#labels3d"), state.model, {
        onPick: (index) => select(index, "pick"),
@@ -564,7 +581,7 @@ diff -ruN a/space/js/app.js b/space/js/app.js
        preserve: /shots/.test(location.search),
        software: info.software,
      });
-@@ -520,7 +719,7 @@
+@@ -520,7 +720,7 @@
      if (info.software) {
        const note = $("#soft");
        note.hidden = false;
@@ -573,7 +590,7 @@ diff -ruN a/space/js/app.js b/space/js/app.js
      }
    } catch (error) {
      console.error(error);
-@@ -571,12 +770,29 @@
+@@ -571,12 +771,29 @@
  }
  
  function setMotion(off) {
@@ -594,18 +611,18 @@ diff -ruN a/space/js/app.js b/space/js/app.js
 +      : "";
 +  }
 +  if (was && !off && state.tour) showStep();
-+}
-+
-+function sleep(ms) {
-+  return new Promise((resolve) => setTimeout(resolve, ms));
  }
  
++function sleep(ms) {
++  return new Promise((resolve) => setTimeout(resolve, ms));
++}
++
 +let tourToken = 0;
 +
  function fitGalaxy(duration = 900) {
    const space = state.space;
    if (!space) return Promise.resolve();
-@@ -604,8 +820,12 @@
+@@ -604,8 +821,12 @@
    const vLimit = rad / Math.sin(fov / 2);
    const hFov = 2 * Math.atan(Math.tan(fov / 2) * aspect);
    const hLimit = rad / Math.sin(hFov / 2);
@@ -620,7 +637,7 @@ diff -ruN a/space/js/app.js b/space/js/app.js
    const eye = space.camera.position.clone().set(cx + dist * 0.2, cy - dist * 0.86, cz + dist * 0.38);
    const target = space.controls.target.clone().set(cx, cy, cz);
    return space.flyTo(eye, target, state.motionOff ? 1 : duration);
-@@ -626,6 +846,7 @@
+@@ -626,12 +847,14 @@
  }
  
  function stopTour(resetCamera) {
@@ -628,7 +645,14 @@ diff -ruN a/space/js/app.js b/space/js/app.js
    state.tour = null;
    state.step = 0;
    $("#tour").hidden = true;
-@@ -643,38 +864,58 @@
+   document.body.classList.remove("touring");
+   if (state.space) {
+     state.space.tourOn = false;
++    state.holdLabels = false;
+     state.space.setPath(null);
+     state.space.setGroup(null);
+     state.space.cancelFly();
+@@ -643,38 +866,78 @@
  async function showStep() {
    const tour = state.tour;
    if (!tour || !state.space) return;
@@ -647,17 +671,29 @@ diff -ruN a/space/js/app.js b/space/js/app.js
    $("#tSource").innerHTML = step.source ? sourceLink(step.source) : "";
    $("#tPrev").disabled = state.step === 0;
    $("#tNext").textContent = state.step === tour.steps.length - 1 ? "Done" : "Next";
-   state.space.tourOn = true;
-   state.space.setPath((step.path || []).map((p) => ({ a: p.a, b: p.b })));
-   state.space.setGroup(step.group && step.group.length ? step.group : null);
+-  state.space.tourOn = true;
+-  state.space.setPath((step.path || []).map((p) => ({ a: p.a, b: p.b })));
+-  state.space.setGroup(step.group && step.group.length ? step.group : null);
+-  if (step.overview) {
++  const opening = state.step === 0;
++  // The opening leg has to leave the picture that is already on screen.
++  // Hiding sector names or isolating the step group before the first frame
++  // reads as a cut even when the camera lerp itself is continuous.
++  state.holdLabels = opening;
++  if (!opening) {
++    state.space.tourOn = true;
++    state.space.setPath((step.path || []).map((p) => ({ a: p.a, b: p.b })));
++    state.space.setGroup(step.group && step.group.length ? step.group : null);
++  }
 +  const dur = state.motionOff ? 1 : 5200;
-   if (step.overview) {
++  if (!opening && step.overview) {
      state.space.select(-1, false);
      state.sel = -1;
      closePanel();
 -    await fitGalaxy(state.motionOff ? 1 : 900);
+-  } else if (step.sector) {
 +    await fitGalaxy(dur);
-   } else if (step.sector) {
++  } else if (!opening && step.sector) {
      const anchor = state.space.sectorAnchors.find((item) => item.sec.id === step.sector);
      if (anchor) {
 -      const dist = phone() ? 2600 : 1900;
@@ -683,13 +719,26 @@ diff -ruN a/space/js/app.js b/space/js/app.js
 +    const ids = [];
 +    for (const pair of step.path || []) ids.push(pair.a, pair.b);
 +    if (step.focus >= 0) ids.push(step.focus);
-+    applyFocusLayout(-1);
++    if (!opening) {
++      applyFocusLayout(-1);
++      if (step.focus >= 0) {
++        state.sel = step.focus;
++        state.space.select(step.focus, false);
++        renderPanel();
++      }
++    }
++    await frameIds(ids, dur);
++  }
++  if (opening && token === tourToken && state.tour) {
++    state.holdLabels = false;
++    state.space.tourOn = true;
++    state.space.setPath((step.path || []).map((p) => ({ a: p.a, b: p.b })));
++    state.space.setGroup(step.group && step.group.length ? step.group : null);
 +    if (step.focus >= 0) {
 +      state.sel = step.focus;
 +      state.space.select(step.focus, false);
 +      renderPanel();
 +    }
-+    await frameIds(ids, dur);
 +  }
 +  if (token !== tourToken || !state.tour || state.motionOff) return;
 +  await sleep(2200);
@@ -700,7 +749,7 @@ diff -ruN a/space/js/app.js b/space/js/app.js
    }
  }
  
-@@ -765,6 +1006,29 @@
+@@ -765,6 +1028,29 @@
    });
    $("#tStop").addEventListener("click", () => stopTour(true));
    $("#helpBtn").addEventListener("click", () => { $("#help").hidden = false; });
@@ -730,7 +779,7 @@ diff -ruN a/space/js/app.js b/space/js/app.js
    $$("[data-close]").forEach((btn) => btn.addEventListener("click", () => { btn.closest(".modal").hidden = true; }));
    $("#panel").addEventListener("click", (event) => {
      const more = event.target.closest(".more-btn");
-@@ -895,6 +1159,7 @@
+@@ -895,6 +1181,7 @@
    };
    searchPlaceholder();
    addEventListener("resize", () => { searchPlaceholder(); placeChrome(); });
@@ -2257,3 +2306,135 @@ diff -ruN a/space/qa/tour-fly.mjs b/space/qa/tour-fly.mjs
 +await browser.close();
 +if (stepCount < 3 || !smooth || pausedDuring || !rstate.reduced || drift >= 40) process.exit(1);
 +console.log("TOUR RECORDING PASSED");
+diff -ruN a/space/qa/tour-open.mjs b/space/qa/tour-open.mjs
+--- a/space/qa/tour-open.mjs	1970-01-01 00:00:00.000000000 +0000
++++ b/space/qa/tour-open.mjs	2026-11-11 17:48:54.540327258 +0000
+@@ -0,0 +1,128 @@
++/**
++ * Opening flight only. Normal motion, Pause is never pressed.
++ * Samples the camera before Start and on every animation frame of the first leg.
++ *   node qa/tour-open.mjs http://127.0.0.1:8766
++ */
++import { mkdirSync } from "node:fs";
++import { chromium } from "playwright-core";
++
++const base = process.argv[2] || "http://127.0.0.1:8766";
++const chromeBin = process.env.CHROME || "/usr/local/bin/google-chrome";
++const out = process.env.SHOTS || "/tmp/tour-open";
++mkdirSync(out, { recursive: true });
++
++const dist = (a, b) => Math.hypot(a[0] - b[0], a[1] - b[1], a[2] - b[2]);
++
++const browser = await chromium.launch({
++  executablePath: chromeBin,
++  headless: true,
++  args: ["--use-gl=angle", "--use-angle=swiftshader", "--enable-unsafe-swiftshader", "--ignore-gpu-blocklist"],
++});
++const context = await browser.newContext({
++  viewport: { width: 1280, height: 800 },
++  deviceScaleFactor: 1,
++  reducedMotion: "no-preference",
++  recordVideo: { dir: out, size: { width: 1280, height: 800 } },
++});
++const page = await context.newPage();
++await page.goto(`${base}/`, { waitUntil: "domcontentloaded" });
++await page.waitForFunction(() => window.__spacePreview && window.__spacePreview.ready, null, { timeout: 30000 });
++await page.waitForTimeout(3500);
++const startState = await page.evaluate(() => ({
++  pause: document.querySelector("#pauseBtn").textContent,
++  pressed: document.querySelector("#pauseBtn").getAttribute("aria-pressed"),
++  reduced: matchMedia("(prefers-reduced-motion: reduce)").matches,
++  motionOff: window.__spacePreview.motionOff,
++}));
++console.log("START", JSON.stringify(startState));
++await page.evaluate(() => {
++  const space = window.__spacePreview.engine;
++  const frames = [];
++  window.__openFrames = frames;
++  const prev = space.opts.onFrame;
++  space.opts.onFrame = () => {
++    if (prev) prev();
++    frames.push({
++      cam: space.camera.position.toArray(),
++      target: space.controls.target.toArray(),
++      step: document.querySelector("#tCount") ? document.querySelector("#tCount").textContent : "",
++      ms: performance.now(),
++    });
++  };
++});
++await page.screenshot({ path: `${out}/overview.png` });
++await page.click("#tourBtn");
++await page.waitForTimeout(2500);
++await page.screenshot({ path: `${out}/menu.png` });
++const before = await page.evaluate(() => {
++  const space = window.__spacePreview.engine;
++  const labels = [...document.querySelectorAll("#labels3d .lab")]
++    .filter((el) => parseFloat(el.style.opacity || "1") > 0.5)
++    .map((el) => el.textContent.trim());
++  return {
++    cam: space.camera.position.toArray(),
++    target: space.controls.target.toArray(),
++    labels,
++    n: window.__openFrames.length,
++  };
++});
++await page.click("#tourList button:nth-child(2)");
++await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))));
++const early = await page.evaluate((mark) => {
++  const frames = window.__openFrames;
++  const first = frames[mark] || frames[frames.length - 1];
++  const labels = [...document.querySelectorAll("#labels3d .lab")]
++    .filter((el) => parseFloat(el.style.opacity || "1") > 0.5)
++    .map((el) => el.textContent.trim());
++  return { first, mark, len: frames.length, step: document.querySelector("#tCount").textContent, labels };
++}, before.n);
++await page.screenshot({ path: `${out}/just-after-start.png` });
++await page.waitForTimeout(2000);
++await page.screenshot({ path: `${out}/open-2s.png` });
++await page.waitForTimeout(2000);
++await page.screenshot({ path: `${out}/open-4s.png` });
++await page.waitForTimeout(2200);
++await page.screenshot({ path: `${out}/open-arrival.png` });
++const end = await page.evaluate((mark) => {
++  const frames = window.__openFrames;
++  const leg = [];
++  for (let i = Math.max(0, mark - 1); i < frames.length; i++) {
++    if (frames[i].step && frames[i].step !== "1 of 3" && leg.length) break;
++    leg.push(frames[i]);
++  }
++  return {
++    pause: document.querySelector("#pauseBtn").textContent,
++    reduced: matchMedia("(prefers-reduced-motion: reduce)").matches,
++    step: document.querySelector("#tCount").textContent,
++    leg: leg.filter((_, i) => i % 8 === 0).map((frame) => ({
++      cam: frame.cam.map((n) => Math.round(n)),
++      target: frame.target.map((n) => Math.round(n)),
++    })),
++    legCount: leg.length,
++  };
++}, before.n);
++const firstCam = early.first.cam;
++const firstTarget = early.first.target;
++const firstMove = dist(before.cam, firstCam);
++const firstTargetMove = dist(before.target, firstTarget);
++const route = dist(before.cam, end.leg.at(-1) ? end.leg.at(-1).cam : firstCam);
++console.log("BEFORE", before.cam.map((n) => Math.round(n)), "target", before.target.map((n) => Math.round(n)));
++console.log("FIRST_FRAME", firstCam.map((n) => Math.round(n)), "target", firstTarget.map((n) => Math.round(n)));
++const kept = before.labels.filter((name) => early.labels.includes(name));
++console.log("LABELS_BEFORE", JSON.stringify(before.labels));
++console.log("LABELS_FIRST", JSON.stringify(early.labels));
++console.log("FIRST_DELTAS", JSON.stringify({ cam: Math.round(firstMove), target: Math.round(firstTargetMove), route: Math.round(route), frames: end.legCount, labelsKept: kept.length, labelsBefore: before.labels.length }));
++console.log("LEG", JSON.stringify(end.leg));
++console.log("STATE", JSON.stringify({ pause: end.pause, reduced: end.reduced, step: end.step }));
++const tiny = route > 200 && firstMove < route * 0.08 && firstTargetMove < route * 0.08;
++const labelsHeld = before.labels.length >= 4 && kept.length >= Math.ceil(before.labels.length * 0.7);
++console.log(tiny ? "PASS opening first frame stays on the overview pose" : "FAIL opening first frame jumped");
++console.log(labelsHeld ? "PASS opening first frame keeps the overview names" : "FAIL opening first frame replaced the overview names");
++console.log(end.pause === "Pause" && end.reduced === false ? "PASS pause was not used and reduced motion is off" : "FAIL motion state");
++await page.waitForTimeout(1500);
++const video = page.video();
++await context.close();
++if (video) console.log("VIDEO", await video.path());
++await browser.close();
++if (!tiny || !labelsHeld || end.pause !== "Pause" || end.reduced) process.exit(1);
++console.log("OPENING FLIGHT PASSED");

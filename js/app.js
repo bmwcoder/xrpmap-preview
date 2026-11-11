@@ -9,7 +9,7 @@ import { drawScale, graphCandidates } from "./source.js";
 
 const CACHE_NAME = "xrpmap-space-graph-v1";
 const CACHE_REQ = new Request(new URL("./graph-cache.json", document.baseURI));
-const CODE = "space-preview-7";
+const CODE = "space-preview-8";
 
 const $ = (sel, root = document) => root.querySelector(sel);
 const $$ = (sel, root = document) => [...root.querySelectorAll(sel)];
@@ -23,6 +23,7 @@ const state = {
   tour: null,
   step: 0,
   motionOff: false,
+  holdLabels: false,
   source: "",
   savedAt: "",
   loadError: "",
@@ -476,7 +477,7 @@ function labelSet() {
   const m = state.model;
   const out = [];
   const focus = state.sel;
-  if (state.tour && focus < 0) {
+  if (state.tour && focus < 0 && !state.holdLabels) {
     const step = state.tour.steps[state.step];
     for (const i of step?.group || []) out.push({ i, cls: "nl tag", force: true });
     if (step?.focus >= 0) out.push({ i: step.focus, cls: "nl sel", force: true });
@@ -853,6 +854,7 @@ function stopTour(resetCamera) {
   document.body.classList.remove("touring");
   if (state.space) {
     state.space.tourOn = false;
+    state.holdLabels = false;
     state.space.setPath(null);
     state.space.setGroup(null);
     state.space.cancelFly();
@@ -879,16 +881,23 @@ async function showStep() {
   $("#tSource").innerHTML = step.source ? sourceLink(step.source) : "";
   $("#tPrev").disabled = state.step === 0;
   $("#tNext").textContent = state.step === tour.steps.length - 1 ? "Done" : "Next";
-  state.space.tourOn = true;
-  state.space.setPath((step.path || []).map((p) => ({ a: p.a, b: p.b })));
-  state.space.setGroup(step.group && step.group.length ? step.group : null);
+  const opening = state.step === 0;
+  // The opening leg has to leave the picture that is already on screen.
+  // Hiding sector names or isolating the step group before the first frame
+  // reads as a cut even when the camera lerp itself is continuous.
+  state.holdLabels = opening;
+  if (!opening) {
+    state.space.tourOn = true;
+    state.space.setPath((step.path || []).map((p) => ({ a: p.a, b: p.b })));
+    state.space.setGroup(step.group && step.group.length ? step.group : null);
+  }
   const dur = state.motionOff ? 1 : 5200;
-  if (step.overview) {
+  if (!opening && step.overview) {
     state.space.select(-1, false);
     state.sel = -1;
     closePanel();
     await fitGalaxy(dur);
-  } else if (step.sector) {
+  } else if (!opening && step.sector) {
     const anchor = state.space.sectorAnchors.find((item) => item.sec.id === step.sector);
     if (anchor) {
       const approach = state.space.camera.position.clone().sub(state.space.controls.target);
@@ -902,13 +911,26 @@ async function showStep() {
     const ids = [];
     for (const pair of step.path || []) ids.push(pair.a, pair.b);
     if (step.focus >= 0) ids.push(step.focus);
-    applyFocusLayout(-1);
+    if (!opening) {
+      applyFocusLayout(-1);
+      if (step.focus >= 0) {
+        state.sel = step.focus;
+        state.space.select(step.focus, false);
+        renderPanel();
+      }
+    }
+    await frameIds(ids, dur);
+  }
+  if (opening && token === tourToken && state.tour) {
+    state.holdLabels = false;
+    state.space.tourOn = true;
+    state.space.setPath((step.path || []).map((p) => ({ a: p.a, b: p.b })));
+    state.space.setGroup(step.group && step.group.length ? step.group : null);
     if (step.focus >= 0) {
       state.sel = step.focus;
       state.space.select(step.focus, false);
       renderPanel();
     }
-    await frameIds(ids, dur);
   }
   if (token !== tourToken || !state.tour || state.motionOff) return;
   await sleep(2200);
