@@ -143,6 +143,52 @@ async function auditScene(page) {
   });
 }
 
+async function auditAnchors(page) {
+  return page.evaluate(() => {
+    const problems = [];
+    const lines = [...document.querySelectorAll("#leaders line")].map((el) => ({
+      x1: Number(el.getAttribute("x1")),
+      y1: Number(el.getAttribute("y1")),
+      x2: Number(el.getAttribute("x2")),
+      y2: Number(el.getAttribute("y2")),
+    }));
+    const space = window.__spacePreview.engine;
+    const model = space.s;
+    for (const el of document.querySelectorAll("#labels3d .lab")) {
+      if (el.classList.contains("sl")) continue;
+      const opacity = parseFloat(el.style.opacity || "1");
+      const span = el.querySelector("span");
+      if (!span || opacity < 0.2) continue;
+      const rect = span.getBoundingClientRect();
+      const text = span.textContent;
+      let nearest = null;
+      for (const node of model.nodes) {
+        if (node.lbl !== text || !model.vn[node.i]) continue;
+        const projected = space.nodeVec(node.i).clone().project(space.camera);
+        if (projected.z > 1) continue;
+        const x = (projected.x + 1) / 2 * space.w;
+        const y = (1 - projected.y) / 2 * space.h;
+        const d = Math.hypot(x - (rect.left + rect.right) / 2, y - (rect.top + rect.bottom) / 2);
+        if (!nearest || d < nearest.d) nearest = { x, y, d };
+      }
+      if (!nearest) continue;
+      const cx = (rect.left + rect.right) / 2;
+      const cy = (rect.top + rect.bottom) / 2;
+      const dx = nearest.x - cx;
+      const dy = nearest.y - cy;
+      if (dx === 0 && dy === 0) continue;
+      const scale = Math.min((rect.width / 2) / Math.abs(dx), (rect.height / 2) / Math.abs(dy));
+      const ex = cx + dx * scale;
+      const ey = cy + dy * scale;
+      const gap = Math.hypot(nearest.x - ex, nearest.y - ey);
+      if (gap < 22) continue;
+      const linked = lines.some((line) => Math.hypot(line.x1 - nearest.x, line.y1 - nearest.y) < 6 && Math.hypot(line.x2 - ex, line.y2 - ey) < 6);
+      if (!linked) problems.push(`${text} gap ${Math.round(gap)}`);
+    }
+    return { problems, lines: lines.length };
+  });
+}
+
 async function auditFilters(page) {
   return page.evaluate(() => {
     const bar = document.querySelector("#filters");
@@ -205,6 +251,8 @@ async function runProfile(browser, name, contextOptions, path) {
   check(`${name} updated visible`, (await page.locator("#updated").innerText()).includes("2026"), await page.locator("#updated").innerText());
   const homeAudit = await auditScene(page);
   check(`${name} home labels clear`, homeAudit.problems.length === 0, homeAudit.problems.slice(0, 6).join("; "));
+  const homeAnchors = await auditAnchors(page);
+  check(`${name} home label leaders`, homeAnchors.problems.length === 0, homeAnchors.problems.slice(0, 4).join("; ") || `${homeAnchors.lines} leaders`);
   check(`${name} home shows entity names`, homeAudit.labels.filter((text) => !homeAudit.sections.includes(text)).length >= (name === "phone" ? 3 : 4) && /Ripple|XRP/.test(homeAudit.labels.join(" ")), homeAudit.labels.join(" | ").slice(0, 220));
   await page.screenshot({ path: `${out}/${path}-home.png` });
   const homeFill = await page.evaluate(() => {
@@ -259,6 +307,8 @@ async function runProfile(browser, name, contextOptions, path) {
   check(`${name} selected neighborhood has depth`, view.width > 220 && view.height > 120 && view.labels >= 6, JSON.stringify(view));
   const selectedAudit = await auditScene(page);
   check(`${name} selected labels clear`, selectedAudit.problems.length === 0, selectedAudit.problems.slice(0, 6).join("; "));
+  const selectedAnchors = await auditAnchors(page);
+  check(`${name} selected label leaders`, selectedAnchors.problems.length === 0, selectedAnchors.problems.slice(0, 4).join("; ") || `${selectedAnchors.lines} leaders`);
   check(`${name} selected name visible`, selectedAudit.labels.some((text) => /^XRP\b/.test(text)), selectedAudit.labels.join(" | ").slice(0, 180));
   check(`${name} selected XRP`, shot.title === "XRP", shot.title);
   check(`${name} grade and adoption copy`, /Primary or official source/.test(shot.text) && /Connections/.test(shot.text) && /Adoption/.test(shot.text), shot.text.slice(0, 180));

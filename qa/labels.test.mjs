@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { settleLabelBoxes } from "../js/labels.js";
+import { leaderEndpoints, settleLabelBoxes } from "../js/labels.js";
 
 function box(id, priority, left, top, width, height) {
   return { id, priority, left, top, right: left + width, bottom: top + height };
@@ -55,6 +55,22 @@ test("a label past the right edge is pulled back or hidden", () => {
   } else {
     assert.equal(edge.show, false);
   }
+});
+
+test("a chip sitting on its node does not need a leader", () => {
+  const line = leaderEndpoints(100, 100, { left: 108, top: 80, right: 160, bottom: 108 });
+  assert.equal(line, null);
+});
+
+test("a label moved off its node gets a leader to the chip edge", () => {
+  const rect = { left: 240, top: 40, right: 400, bottom: 70 };
+  const line = leaderEndpoints(100, 200, rect);
+  assert.ok(line);
+  assert.equal(line.x1, 100);
+  assert.equal(line.y1, 200);
+  assert.ok(line.x2 >= rect.left - 0.1 && line.x2 <= rect.right + 0.1);
+  assert.ok(line.y2 >= rect.top - 0.1 && line.y2 <= rect.bottom + 0.1);
+  assert.ok(line.gap >= 22);
 });
 
 test("a label with no clear slot is hidden instead of covering another", () => {

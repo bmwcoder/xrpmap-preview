@@ -61,3 +61,20 @@ export function settleLabelBoxes(items, obstacles, bounds) {
   }
   return out;
 }
+
+/** Line from a node point to the near edge of a label chip. Null when the chip already sits on the point. */
+export function leaderEndpoints(nodeX, nodeY, rect, minGap = 22) {
+  const cx = (rect.left + rect.right) / 2;
+  const cy = (rect.top + rect.bottom) / 2;
+  const dx = nodeX - cx;
+  const dy = nodeY - cy;
+  if (dx === 0 && dy === 0) return null;
+  const hw = (rect.right - rect.left) / 2;
+  const hh = (rect.bottom - rect.top) / 2;
+  const scale = Math.min(hw / Math.abs(dx), hh / Math.abs(dy));
+  const x2 = cx + dx * scale;
+  const y2 = cy + dy * scale;
+  const gap = Math.hypot(nodeX - x2, nodeY - y2);
+  if (gap < minGap) return null;
+  return { x1: nodeX, y1: nodeY, x2, y2, gap };
+}

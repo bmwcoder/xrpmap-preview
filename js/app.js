@@ -4,12 +4,12 @@ import {
   escapeHtml, formatUpdated, hostOf, latestEdges, safeUrl, searchNodes,
   shellAround, toggleGrade, toggleSide, toursFor, validateGraph,
 } from "./graph.js";
-import { settleLabelBoxes } from "./labels.js";
+import { leaderEndpoints, settleLabelBoxes } from "./labels.js";
 import { graphCandidates } from "./source.js";
 
 const CACHE_NAME = "xrpmap-space-graph-v1";
 const CACHE_REQ = new Request(new URL("./graph-cache.json", document.baseURI));
-const CODE = "space-preview-3";
+const CODE = "space-preview-4";
 
 const $ = (sel, root = document) => root.querySelector(sel);
 const $$ = (sel, root = document) => [...root.querySelectorAll(sel)];
@@ -507,6 +507,7 @@ function layoutLabels() {
       bottom: rect.bottom,
     });
   }
+  const moved = [];
   for (const result of settleLabelBoxes(items, obstacles, bounds)) {
     if (!result.show) {
       result.id.style.opacity = "0";
@@ -515,7 +516,65 @@ function layoutLabels() {
     if (result.dx || result.dy) {
       result.id.style.marginLeft = `${result.dx}px`;
       result.id.style.marginTop = `${result.dy}px`;
+      if (!result.id.classList.contains("sl")) moved.push(result.id);
     }
+  }
+  drawLeaders(moved);
+}
+
+function leaderSvg() {
+  let svg = $("#leaders");
+  if (svg) return svg;
+  const root = $("#labels3d");
+  if (!root) return null;
+  svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+  svg.id = "leaders";
+  svg.setAttribute("aria-hidden", "true");
+  root.prepend(svg);
+  return svg;
+}
+
+function nodeAnchor(text, rect) {
+  const space = state.space;
+  const model = state.model;
+  if (!space || !model || !rect) return null;
+  const cx = (rect.left + rect.right) / 2;
+  const cy = (rect.top + rect.bottom) / 2;
+  let best = null;
+  for (const node of model.nodes) {
+    if (node.lbl !== text || !model.vn[node.i]) continue;
+    const projected = space.nodeVec(node.i).clone().project(space.camera);
+    if (projected.z > 1) continue;
+    const x = (projected.x + 1) / 2 * space.w;
+    const y = (1 - projected.y) / 2 * space.h;
+    const d = Math.hypot(x - cx, y - cy);
+    if (!best || d < best.d) best = { x, y, d };
+  }
+  return best;
+}
+
+function drawLeaders(moved) {
+  const svg = leaderSvg();
+  if (!svg) return;
+  svg.replaceChildren();
+  for (const el of moved) {
+    const span = el.querySelector("span");
+    if (!span) continue;
+    const rect = span.getBoundingClientRect();
+    const anchor = nodeAnchor(span.textContent, rect);
+    if (!anchor) continue;
+    const line = leaderEndpoints(anchor.x, anchor.y, rect);
+    if (!line) continue;
+    const stroke = document.createElementNS("http://www.w3.org/2000/svg", "line");
+    stroke.setAttribute("x1", line.x1.toFixed(1));
+    stroke.setAttribute("y1", line.y1.toFixed(1));
+    stroke.setAttribute("x2", line.x2.toFixed(1));
+    stroke.setAttribute("y2", line.y2.toFixed(1));
+    const dot = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+    dot.setAttribute("cx", line.x1.toFixed(1));
+    dot.setAttribute("cy", line.y1.toFixed(1));
+    dot.setAttribute("r", "2.5");
+    svg.append(stroke, dot);
   }
 }
 
